@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: turismo
       POSTGRES_PASSWORD: turismo
     ports:
-      - "54320:5432"
+      - "${POSTGRES_PORT:-54320}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/20-test-database.sql:/docker-entrypoint-initdb.d/20-test-database.sql:ro
@@ -21,7 +21,7 @@ services:
   redis:
     image: redis:8.8-alpine
     ports:
-      - "63790:6379"
+      - "${REDIS_PORT:-63790}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -69,6 +69,7 @@ services:
       - "8000:8000"
     volumes:
       - ./:/repo
+      - php-vendor:/repo/backend/vendor
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/api/health || exit 1"]
       interval: 5s
@@ -89,6 +90,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/repo
+      - php-vendor:/repo/backend/vendor
     depends_on:
       php:
         condition: service_healthy
@@ -99,6 +101,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/repo
+      - php-vendor:/repo/backend/vendor
     depends_on:
       php:
         condition: service_healthy
@@ -110,6 +113,8 @@ services:
       CALLBACK_HOSTS: php
       REFERENCE_HOSTS: localhost
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${LLM_BASE_URL:-https://api.anthropic.com}
+      AGENT_MODEL: ${AGENT_MODEL:-}
       PORT: "3100"
     extra_hosts:
       - "localhost:host-gateway"
@@ -125,5 +130,6 @@ services:
       start_period: 180s
 
 volumes:
+  php-vendor:
   postgres-data:
   s3-data:

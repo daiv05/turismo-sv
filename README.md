@@ -66,7 +66,7 @@ Para servirlo desde Laravel: `pnpm --filter @turismo/frontend build` genera `bac
 
 ### Agente generador
 
-Define `ANTHROPIC_API_KEY` antes de levantar el servicio `builder`. Sin ella `/generate` responde 503 y el resto del servicio funciona. Los precios para el costo estimado se configuran con `LLM_PRICE_INPUT`, `LLM_PRICE_OUTPUT`, `LLM_PRICE_CACHE_READ` y `LLM_PRICE_CACHE_WRITE` (USD por millón de tokens).
+Define `ANTHROPIC_API_KEY` (y `LLM_BASE_URL` si usas un gateway compatible con la API de Anthropic, sin el sufijo `/v1`) en `.env` antes de levantar el servicio `builder`. Sin ella `/generate` responde 503 y el resto del servicio funciona. Los precios para el costo estimado se configuran con `LLM_PRICE_INPUT`, `LLM_PRICE_OUTPUT`, `LLM_PRICE_CACHE_READ` y `LLM_PRICE_CACHE_WRITE` (USD por millón de tokens).
 
 ## Pruebas
 
@@ -85,8 +85,8 @@ Las pruebas e2e necesitan el backend, el visor y un tileset publicado; usan `CHR
 |---|---|
 | Laravel | 8000 |
 | builder-service | 3100 |
-| PostgreSQL + PostGIS | 54320 |
-| Redis | 63790 |
+| PostgreSQL + PostGIS | 54320 (`POSTGRES_PORT`) |
+| Redis | 63790 (`REDIS_PORT`) |
 | SeaweedFS S3 | 8333 |
 | Vite | 5173 |
 
