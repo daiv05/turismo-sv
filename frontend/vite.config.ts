@@ -61,7 +61,12 @@ function localAssets(): Plugin {
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/app/' : '/',
-  build: { outDir: '../backend/public/app', emptyOutDir: true, manifest: true },
+  build: {
+    outDir: '../backend/public/app',
+    emptyOutDir: true,
+    manifest: true,
+    rollupOptions: { input: { index: fileURLToPath(new URL('./index.html', import.meta.url)), studio: fileURLToPath(new URL('./studio.html', import.meta.url)) } },
+  },
   plugins: [vue(), localAssets()],
   server: {
     host: '0.0.0.0',

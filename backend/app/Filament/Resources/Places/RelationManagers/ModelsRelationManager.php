@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 /**
  * The 3D studio of a place: every model version with its thumbnails, plus the actions to create versions from a
@@ -137,6 +138,17 @@ class ModelsRelationManager extends RelationManager
                         $record->update(['status' => ModelStatus::Queued, 'failure_reason' => null]);
                         BuildPlaceModelJob::dispatch($record->id);
                     }),
+                Action::make('preview')
+                    ->label('3D preview')
+                    ->icon('heroicon-o-cube')
+                    ->visible(fn (PlaceModel $record) => $record->glb_path !== null)
+                    ->modalHeading(fn (PlaceModel $record) => "Version {$record->version}")
+                    ->modalWidth('5xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalContent(fn (PlaceModel $record) => new HtmlString(
+                        '<iframe src="'.e($record->previewUrl()).'" title="3D preview" style="width:100%;height:60vh;border:0;border-radius:12px" loading="lazy"></iframe>',
+                    )),
                 Action::make('viewSpec')
                     ->label('Document')
                     ->visible(fn (PlaceModel $record) => $record->spec !== null)

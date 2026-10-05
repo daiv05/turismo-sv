@@ -86,12 +86,12 @@ Las pruebas e2e necesitan el backend, el visor y un tileset publicado; usan `CHR
 Implementado y verificado con pruebas automáticas y en navegador:
 
 - Terreno de todo el país en teselas con carga por nivel, modelos 3D aprobados de los cinco monumentos del Centro Histórico, pines, promociones con insignias y spritesheets, panel de detalle, búsqueda, filtros, ES/EN, enlaces profundos, páginas SEO, vista lista sin WebGL y PWA.
-- Panel con roles de superadministrador y administrador de zona (alcance por geometría), flujo borrador → aprobación para sitios, promociones y modelos, estudio 3D con versiones, subida de glb y generación con IA.
+- Panel con roles de superadministrador y administrador de zona (alcance por geometría), flujo borrador → aprobación para sitios, promociones y modelos, estudio 3D con versiones, vista previa 3D, subida de glb y generación con IA.
 
 Pendiente o no verificado:
 
 - Calles, edificios genéricos, vegetación y límites administrativos desde OSM: el pipeline solo usa el DEM y un contorno provisional del país porque el acceso a Geofabrik estaba bloqueado en el entorno de desarrollo. El detalle completo del Gran San Salvador depende de esos datos.
-- Exclusión de huellas en las teselas al aprobar un modelo y vista previa 3D dentro de Filament.
+- Exclusión de huellas en las teselas al aprobar un modelo: no hay edificios genéricos que omitir mientras no existan los datos de OSM.
 - El agente contra la API real de Claude: se probó con respuestas grabadas y el ciclo completo entre servicios con un modelo de lenguaje simulado, sin llamadas reales.
 - La configuración de Docker (servicios `builder`, `queue`, `scheduler`, lectura anónima y CORS de SeaweedFS) está escrita pero no se pudo ejecutar en el entorno de desarrollo, que no tenía Docker; el resto se probó contra Postgres, Redis y un S3 compatible locales.
 - Rendimiento en un Android de gama media y los ajustes visuales finos.

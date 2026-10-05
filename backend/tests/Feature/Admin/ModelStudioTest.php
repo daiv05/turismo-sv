@@ -188,3 +188,27 @@ it('does not offer generation to users who cannot edit the place', function () {
 
     expect(ModelsRelationManager::canViewForRecord($outside, EditPlace::class))->toBeFalse();
 });
+
+it('builds the preview address from the public model URL', function () {
+    config(['app.frontend_dev_url' => null]);
+    $model = modelFor($this->place, ['glb_path' => 'models/1/v2/model.glb']);
+    $public = Storage::disk('s3')->url('models/1/v2/model.glb');
+
+    expect($model->previewUrl())->toBe('/app/studio.html?glb='.rawurlencode($public));
+
+    config(['app.frontend_dev_url' => 'http://localhost:5173/']);
+    expect($model->previewUrl())->toStartWith('http://localhost:5173/studio.html?glb=');
+});
+
+it('has no preview for versions without a file', function () {
+    expect(modelFor($this->place, ['glb_path' => null, 'status' => ModelStatus::Failed])->previewUrl())->toBeNull();
+});
+
+it('offers the 3D preview only when there is a file', function () {
+    $with = modelFor($this->place);
+    $without = modelFor($this->place, ['version' => 2, 'glb_path' => null, 'status' => ModelStatus::Failed]);
+
+    studio($this->superAdmin, $this->place)
+        ->assertActionHidden(TestAction::make('preview')->table($without))
+        ->assertActionVisible(TestAction::make('preview')->table($with));
+});
