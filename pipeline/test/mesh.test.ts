@@ -67,4 +67,23 @@ describe('buildTerrainMesh', () => {
     const vertexCount = mesh.positions.length / 3;
     expect(Math.max(...mesh.indices)).toBeLessThan(vertexCount);
   });
+
+  it('scales surface heights without changing the colors input', () => {
+    const grid = createGrid(bounds, 3, 3, () => 100);
+    const seen: number[] = [];
+    const mesh = buildTerrainMesh(grid, {
+      skirtDepth: 20,
+      isLand: () => true,
+      colorForHeight: (h) => {
+        seen.push(h);
+        return [0, 0, 0];
+      },
+      skirtColor: [0, 0, 0],
+      heightScale: 3,
+    });
+    const ys = Array.from({ length: mesh.positions.length / 3 }, (_, k) => mesh.positions[k * 3 + 1]!);
+    expect(Math.max(...ys)).toBe(300);
+    expect(Math.min(...ys)).toBe(-20);
+    expect(new Set(seen)).toEqual(new Set([100]));
+  });
 });

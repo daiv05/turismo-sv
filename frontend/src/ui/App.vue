@@ -9,7 +9,8 @@ let engine: Engine | null = null;
 
 onMounted(() => {
   if (!canvas.value) return;
-  engine = new Engine(canvas.value, { tilesetUrl: '/tiles/dev/tileset.json' });
+  const version = new URLSearchParams(window.location.search).get('tileset') ?? 'dev';
+  engine = new Engine(canvas.value, { tilesetUrl: `/tiles/${encodeURIComponent(version)}/tileset.json` });
   engine.events.on('zoomLevelChanged', (e) => {
     level.value = e.level;
   });

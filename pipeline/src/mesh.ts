@@ -13,12 +13,14 @@ export interface MeshOptions {
   isLand: (x: number, z: number) => boolean;
   colorForHeight: (height: number) => Rgb;
   skirtColor: Rgb;
+  heightScale?: number;
 }
 
 /**
  * Builds the terrain surface for the cells whose center is land, plus vertical walls down to
  * `-skirtDepth` along every edge that borders the sea or the end of the grid. Positions use scene
- * coordinates with y up, colors are linear RGB per vertex.
+ * coordinates with y up, colors are linear RGB per vertex. `heightScale` exaggerates relief in the positions
+ * only, so colors still follow the real elevation.
  */
 export function buildTerrainMesh(grid: HeightGrid, options: MeshOptions): TerrainMesh {
   const { cols, rows } = grid;
@@ -26,6 +28,7 @@ export function buildTerrainMesh(grid: HeightGrid, options: MeshOptions): Terrai
   const colors: number[] = [];
   const indices: number[] = [];
   const topIndex = new Map<number, number>();
+  const scale = options.heightScale ?? 1;
 
   const included = (i: number, j: number): boolean => {
     if (i < 0 || j < 0 || i >= cols - 1 || j >= rows - 1) return false;
@@ -46,7 +49,7 @@ export function buildTerrainMesh(grid: HeightGrid, options: MeshOptions): Terrai
     if (existing !== undefined) return existing;
     const { x, z } = gridPosition(grid, i, j);
     const h = grid.data[key] ?? 0;
-    const index = pushVertex(x, h, z, options.colorForHeight(h));
+    const index = pushVertex(x, h * scale, z, options.colorForHeight(h));
     topIndex.set(key, index);
     return index;
   };
@@ -67,8 +70,8 @@ export function buildTerrainMesh(grid: HeightGrid, options: MeshOptions): Terrai
     const h1 = grid.data[j1 * cols + i1] ?? 0;
     const p0 = gridPosition(grid, i0, j0);
     const p1 = gridPosition(grid, i1, j1);
-    const a = pushVertex(p0.x, h0, p0.z, options.skirtColor);
-    const b = pushVertex(p1.x, h1, p1.z, options.skirtColor);
+    const a = pushVertex(p0.x, h0 * scale, p0.z, options.skirtColor);
+    const b = pushVertex(p1.x, h1 * scale, p1.z, options.skirtColor);
     const c = pushVertex(p0.x, -options.skirtDepth, p0.z, options.skirtColor);
     const d = pushVertex(p1.x, -options.skirtDepth, p1.z, options.skirtColor);
     pushOriented(a, c, b, outward);

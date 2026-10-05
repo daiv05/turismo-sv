@@ -9,6 +9,7 @@ import { DATA_DIR, DEM_TILES, OUT_DIR } from './paths';
 const LEVELS = Number(process.env.LEVELS ?? 6);
 const SAMPLES = Number(process.env.SAMPLES ?? 65);
 const SOURCE_PIXELS = 1200;
+const HEIGHT_SCALE = Number(process.env.HEIGHT_SCALE ?? 3);
 const VERSION = process.env.TILESET_VERSION ?? 'dev';
 
 interface DemTile {
@@ -84,6 +85,7 @@ async function main(): Promise<void> {
     heightAt,
     isLand,
     compress: true,
+    heightScale: HEIGHT_SCALE,
     write: async (path, data) => {
       const file = `${target}${path}`;
       await mkdir(dirname(file), { recursive: true });

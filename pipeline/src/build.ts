@@ -14,6 +14,7 @@ export interface BuildOptions {
   isLand: (x: number, z: number) => boolean;
   compress: boolean;
   skirtDepth?: number;
+  heightScale?: number;
   write: (path: string, data: Uint8Array | string) => Promise<void>;
 }
 
@@ -49,6 +50,7 @@ export async function buildTileTree(options: BuildOptions): Promise<BuildResult>
       isLand: options.isLand,
       colorForHeight: terrainColor,
       skirtColor: SKIRT_COLOR,
+      heightScale: options.heightScale ?? 1,
     });
 
     const children: TileNode[] = [];
