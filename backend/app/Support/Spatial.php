@@ -26,11 +26,13 @@ final class Spatial
      * Builds a WGS84 geometry expression from a GeoJSON geometry array, binding nothing from user input unescaped.
      *
      * @param  array<string, mixed>  $geometry
+     * @param  bool  $multi  Promote single polygons to multipolygons for MultiPolygon columns.
      */
-    public static function fromGeoJson(array $geometry): Expression
+    public static function fromGeoJson(array $geometry, bool $multi = false): Expression
     {
         $json = json_encode($geometry, JSON_THROW_ON_ERROR);
+        $expression = 'ST_SetSRID(ST_GeomFromGeoJSON('.DB::getPdo()->quote($json).'), 4326)';
 
-        return DB::raw('ST_SetSRID(ST_GeomFromGeoJSON('.DB::getPdo()->quote($json).'), 4326)');
+        return DB::raw($multi ? "ST_Multi({$expression})" : $expression);
     }
 }

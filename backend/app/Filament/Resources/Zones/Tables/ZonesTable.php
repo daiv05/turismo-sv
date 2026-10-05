@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\Zones\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class ZonesTable
@@ -13,18 +12,12 @@ class ZonesTable
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('slug')->searchable(),
+                TextColumn::make('name'),
+                TextColumn::make('type')->badge()->formatStateUsing(fn ($state) => is_object($state) ? $state->value : $state),
+                TextColumn::make('parent.slug')->label('Parent'),
             ])
-            ->filters([
-                //
-            ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->recordActions([EditAction::make()])
+            ->defaultSort('slug');
     }
 }
