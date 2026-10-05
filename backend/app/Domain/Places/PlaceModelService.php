@@ -4,6 +4,7 @@ namespace App\Domain\Places;
 
 use App\Events\PlaceModelApproved;
 use App\Jobs\BuildPlaceModelJob;
+use App\Jobs\RequestGenerationJob;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -65,29 +66,150 @@ final class PlaceModelService
             throw $e;
         }
 
+        $this->storeResult($model, $result['glb'], $result['thumbnails'] ?? [], $result['spec'] ?? $model->spec, [
+            'triangles' => $result['triangles'],
+            'duration_ms' => (int) round((microtime(true) - $started) * 1000),
+            'warnings' => $result['warnings'] ?? [],
+        ]);
+    }
+
+    /**
+     * Registers a version that an AI generation will fill in, and queues the request to the builder.
+     *
+     * @param  list<string>  $referenceUrls  Public URLs of reference photos.
+     */
+    public function requestGeneration(Place $place, string $prompt, array $referenceUrls, User $creator, bool $dispatch = true): PlaceModel
+    {
+        $model = $this->newVersion($place, $creator, [
+            'source' => 'kit',
+            'prompt' => $prompt,
+            'reference_media' => $referenceUrls,
+            'status' => ModelStatus::Queued,
+        ]);
+
+        if ($dispatch) {
+            RequestGenerationJob::dispatch($model->id);
+        }
+
+        return $model;
+    }
+
+    /**
+     * Sends a queued generation to the builder, which answers later through the callback.
+     *
+     * @throws BuilderUnavailable When the builder is down, leaving the version queued for a retry.
+     */
+    public function dispatchGeneration(PlaceModel $model): void
+    {
+        if ($model->status !== ModelStatus::Queued) {
+            return;
+        }
+
+        $model->update(['status' => ModelStatus::Generating]);
+        try {
+            $this->builder->generate([
+                'jobId' => $model->id,
+                'description' => (string) $model->prompt,
+                'footprint' => $this->plotSize($model->place_id),
+                'referenceUrls' => $model->reference_media ?? [],
+                'callbackUrl' => rtrim((string) config('services.builder.callback_base'), '/')."/api/internal/models/{$model->id}/callback",
+            ]);
+        } catch (BuilderRejected $e) {
+            $model->update(['status' => ModelStatus::Failed, 'failure_reason' => $e->getMessage()]);
+        } catch (BuilderUnavailable $e) {
+            $model->update(['status' => ModelStatus::Queued]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Applies the result the builder reports for an AI generation. Versions that are not waiting for one are ignored.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function complete(PlaceModel $model, array $payload): void
+    {
+        if ($model->status !== ModelStatus::Generating) {
+            return;
+        }
+
+        if (($payload['status'] ?? null) !== 'ok') {
+            $model->update(['status' => ModelStatus::Failed, 'failure_reason' => (string) ($payload['reason'] ?? 'The generation failed.')]);
+
+            return;
+        }
+
+        $log = (array) ($payload['log'] ?? []);
+        $this->storeResult($model, $payload['glb'], $payload['thumbnails'] ?? [], $payload['spec'], [
+            'triangles' => $payload['triangles'] ?? null,
+            'iterations' => $log['iterations'] ?? [],
+            'usage' => $log['usage'] ?? null,
+            'notes' => $log['notes'] ?? [],
+            'cost_usd' => $this->cost($log['usage'] ?? null),
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $thumbnails  Base64 PNG images.
+     * @param  array<string, mixed>|null  $spec
+     * @param  array<string, mixed>  $log
+     */
+    private function storeResult(PlaceModel $model, string $glb, array $thumbnails, ?array $spec, array $log): void
+    {
         $directory = "models/{$model->place_id}/v{$model->version}";
         $disk = $this->disk();
-        $disk->put("{$directory}/model.glb", base64_decode($result['glb'], true) ?: '');
-        $thumbnails = [];
-        foreach (array_values($result['thumbnails'] ?? []) as $i => $image) {
+        $disk->put("{$directory}/model.glb", base64_decode($glb, true) ?: '');
+        $paths = [];
+        foreach (array_values($thumbnails) as $i => $image) {
             $path = "{$directory}/thumb-".($i + 1).'.png';
             $disk->put($path, base64_decode($image, true) ?: '');
-            $thumbnails[] = $path;
+            $paths[] = $path;
         }
 
         $model->update([
             'status' => ModelStatus::Draft,
             'glb_path' => "{$directory}/model.glb",
-            'thumbnail_paths' => $thumbnails,
-            'kit_version' => $result['spec']['kitVersion'] ?? null,
-            'spec' => $result['spec'] ?? $model->spec,
+            'thumbnail_paths' => $paths,
+            'kit_version' => $spec['kitVersion'] ?? null,
+            'spec' => $spec,
             'failure_reason' => null,
-            'generation_log' => [
-                'triangles' => $result['triangles'],
-                'duration_ms' => (int) round((microtime(true) - $started) * 1000),
-                'warnings' => $result['warnings'] ?? [],
-            ],
+            'generation_log' => $log,
         ]);
+    }
+
+    /**
+     * Cost in US dollars from token usage and the configured prices per million tokens, or null without prices.
+     *
+     * @param  array<string, int>|null  $usage
+     */
+    private function cost(?array $usage): ?float
+    {
+        $prices = config('llm.pricing');
+        if (! $prices || ! $usage) {
+            return null;
+        }
+
+        return (($usage['inputTokens'] ?? 0) * $prices['input']
+            + ($usage['outputTokens'] ?? 0) * $prices['output']
+            + ($usage['cacheReadTokens'] ?? 0) * $prices['cache_read']
+            + ($usage['cacheWriteTokens'] ?? 0) * $prices['cache_write']) / 1_000_000;
+    }
+
+    /**
+     * Width and depth in meters of the place's footprint, or a 40 by 40 plot when it has none.
+     *
+     * @return array{w: float, d: float}
+     */
+    private function plotSize(int $placeId): array
+    {
+        $row = DB::selectOne(
+            'select ST_XMax(e) - ST_XMin(e) as w, ST_YMax(e) - ST_YMin(e) as d from (select ST_Transform(footprint, 32616) as e from places where id = ? and footprint is not null) t',
+            [$placeId],
+        );
+
+        return $row?->w > 0 && $row?->d > 0
+            ? ['w' => min(500.0, round((float) $row->w, 1)), 'd' => min(500.0, round((float) $row->d, 1))]
+            : ['w' => 40, 'd' => 40];
     }
 
     /**

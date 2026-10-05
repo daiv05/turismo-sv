@@ -39,6 +39,7 @@ return [
         'url' => env('BUILDER_URL', 'http://builder:3100'),
         'token' => env('BUILDER_TOKEN'),
         'timeout' => (int) env('BUILDER_TIMEOUT', 120),
+        'callback_base' => env('BUILDER_CALLBACK_BASE', 'http://php:8000'),
     ],
 
 ];

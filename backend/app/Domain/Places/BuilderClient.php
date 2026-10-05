@@ -24,6 +24,19 @@ final class BuilderClient
     }
 
     /**
+     * Starts an asynchronous AI generation; the builder reports the result to the callback URL.
+     *
+     * @param  array<string, mixed>  $payload
+     *
+     * @throws BuilderRejected When the request is invalid.
+     * @throws BuilderUnavailable When the service cannot be reached or fails.
+     */
+    public function generate(array $payload): void
+    {
+        $this->post('/generate', $payload);
+    }
+
+    /**
      * Normalizes an externally modeled glb.
      *
      * @param  array{w: float, d: float}|null  $footprint

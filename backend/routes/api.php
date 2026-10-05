@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\ModelCallbackController;
 use App\Http\Controllers\Api\PlaceController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\HealthController;
+use App\Http\Middleware\AuthenticateBuilder;
 use App\Http\Middleware\CacheableJson;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +19,5 @@ Route::middleware(['throttle:public-api', CacheableJson::class.':60'])->group(fu
     Route::get('/zones/{slug}', [ZoneController::class, 'show']);
     Route::get('/search', SearchController::class);
 });
+
+Route::middleware(['throttle:120,1', AuthenticateBuilder::class])->post('/internal/models/{model}/callback', ModelCallbackController::class);

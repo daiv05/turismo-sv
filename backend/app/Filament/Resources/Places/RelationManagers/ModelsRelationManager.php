@@ -82,6 +82,26 @@ class ModelsRelationManager extends RelationManager
                         $service()->createFromSpec($this->getOwnerRecord(), json_decode($data['spec'], true), auth()->user(), $data['prompt'] ?? null);
                         Notification::make()->title('Build queued')->success()->send();
                     }),
+                Action::make('generateWithAi')
+                    ->label('Generate with AI')
+                    ->schema([
+                        Textarea::make('description')->required()->maxLength(4000)->rows(5)->helperText('Describe the site: shape, roofs, towers, colors, surroundings.'),
+                        FileUpload::make('photos')
+                            ->image()
+                            ->multiple()
+                            ->maxFiles(6)
+                            ->maxSize(5120)
+                            ->disk(config('filesystems.default'))
+                            ->directory('references')
+                            ->visibility('public')
+                            ->helperText('Reference photos help the agent match proportions.'),
+                    ])
+                    ->action(function (array $data) use ($service): void {
+                        $disk = Storage::disk(config('filesystems.default'));
+                        $urls = array_map(fn (string $path) => $disk->url($path), array_values((array) ($data['photos'] ?? [])));
+                        $service()->requestGeneration($this->getOwnerRecord(), $data['description'], $urls, auth()->user());
+                        Notification::make()->title('Generation queued')->body('It can take a few minutes. The new version appears here as a draft.')->success()->send();
+                    }),
                 Action::make('uploadGlb')
                     ->label('Upload glb')
                     ->visible($isSuperAdmin)

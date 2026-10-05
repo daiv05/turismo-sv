@@ -156,3 +156,35 @@ it('shows the builder explanation when an upload is rejected', function () {
 
     expect(PlaceModel::count())->toBe(0);
 });
+
+it('queues an AI generation with a description and reference photos', function () {
+    Queue::fake();
+
+    studio($this->zoneAdmin, $this->place)
+        ->callAction(TestAction::make('generateWithAi')->table(), [
+            'description' => 'Iglesia colonial con cúpula azul',
+            'photos' => [UploadedFile::fake()->image('ref.jpg')],
+        ])
+        ->assertHasNoFormErrors();
+
+    $model = PlaceModel::firstOrFail();
+    expect($model->status)->toBe(ModelStatus::Queued)->and($model->prompt)->toBe('Iglesia colonial con cúpula azul')
+        ->and($model->reference_media)->toHaveCount(1)->and($model->reference_media[0])->toContain('references/');
+    Queue::assertPushed(App\Jobs\RequestGenerationJob::class);
+});
+
+it('requires a description to generate', function () {
+    Queue::fake();
+
+    studio($this->zoneAdmin, $this->place)
+        ->callAction(TestAction::make('generateWithAi')->table(), ['description' => ''])
+        ->assertHasFormErrors(['description']);
+
+    expect(PlaceModel::count())->toBe(0);
+});
+
+it('does not offer generation to users who cannot edit the place', function () {
+    $outside = Place::factory()->at(-89.56, 13.99)->create();
+
+    expect(ModelsRelationManager::canViewForRecord($outside, EditPlace::class))->toBeFalse();
+});
