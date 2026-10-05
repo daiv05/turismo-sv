@@ -41,6 +41,11 @@ class PlaceResource extends Resource
         return parent::getEloquentQuery()->withCoordinates()->visibleTo(auth()->user());
     }
 
+    public static function getRelations(): array
+    {
+        return [RelationManagers\ModelsRelationManager::class];
+    }
+
     public static function getPages(): array
     {
         return [
