@@ -35,11 +35,13 @@ function localTiles(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/app/' : '/',
+  build: { outDir: '../backend/public/app', emptyOutDir: true, manifest: true },
   plugins: [vue(), localTiles()],
   server: {
     host: '0.0.0.0',
     port: 5173,
     proxy: { '/api': { target: process.env.API_URL ?? 'http://localhost:8000', changeOrigin: true } },
   },
-});
+}));

@@ -124,3 +124,9 @@ describe('FrontendAssets', function () {
         expect((new FrontendAssets('/nonexistent', '/app', null))->tags())->toBe('');
     });
 });
+
+it('answers unknown places with a friendly page that is not indexed', function () {
+    $response = $this->get('/lugar/no-existe')->assertNotFound();
+
+    expect($response->getContent())->toContain('ya no está disponible')->toContain('href="/"')->toContain('noindex');
+});

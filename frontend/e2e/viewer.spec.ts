@@ -74,8 +74,12 @@ test.describe('viewer', () => {
   });
 
   test('shows a message for a deep link to a place that does not exist', async ({ page }) => {
-    await page.goto('/lugar/no-existe');
+    const response = await page.goto('/lugar/no-existe');
 
-    await expect(page.getByRole('status')).toContainText(/ya no está disponible/);
+    if (response?.status() === 404) {
+      await expect(page.getByRole('link', { name: /Volver al mapa/ })).toBeVisible();
+    } else {
+      await expect(page.getByRole('status')).toContainText(/ya no está disponible/);
+    }
   });
 });
