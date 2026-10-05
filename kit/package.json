@@ -5,7 +5,14 @@
   "type": "module",
   "exports": {
     "./palette": "./src/palette.ts",
-    "./geo": "./src/geo.ts"
+    "./geo": "./src/geo.ts",
+    "./color": "./src/color.ts",
+    "./spec": "./src/spec.ts",
+    "./builder": "./src/builder.ts",
+    "./rules": "./src/rules.ts",
+    "./pieces": "./src/pieces/index.ts",
+    "./styleGuide": "./src/styleGuide.ts",
+    ".": "./src/index.ts"
   },
   "scripts": {
     "test": "vitest run",

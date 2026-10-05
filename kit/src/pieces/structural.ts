@@ -35,7 +35,7 @@ export const tower = definePiece({
     w: positive(60).describe('width at the base in meters along x'),
     d: positive(60).describe('depth at the base in meters along z'),
     h: positive(150).describe('height in meters'),
-    taper: z.number().min(0.2).max(1).describe('top size divided by base size, 1 for straight walls'),
+    taper: z.number().min(0.2).max(1).default(1).describe('top size divided by base size, 1 for straight walls'),
   }),
   example: { w: 8, d: 8, h: 30, taper: 0.8 },
   build: (p, role) => {
@@ -74,7 +74,7 @@ export const dome = definePiece({
   description: 'Hemispherical dome, optionally on a cylindrical drum.',
   params: z.object({
     r: positive(60).describe('radius in meters'),
-    drum: z.number().min(0).max(60).describe('height of the cylindrical drum under the dome in meters, 0 for none'),
+    drum: z.number().min(0).max(60).default(0).describe('height of the cylindrical drum under the dome in meters, 0 for none'),
   }),
   example: { r: 9, drum: 3 },
   build: (p, role) => [
@@ -102,7 +102,7 @@ export const hipRoofPiece = definePiece({
     w: positive(300).describe('width in meters along x'),
     d: positive(300).describe('depth in meters along z'),
     h: positive(60).describe('height in meters'),
-    ridge: z.number().min(0).max(1).describe('ridge length, 0 for a pyramid and 1 for the full hip'),
+    ridge: z.number().min(0).max(1).default(1).describe('ridge length, 0 for a pyramid and 1 for the full hip'),
   }),
   example: { w: 20, d: 12, h: 5, ridge: 1 },
   build: (p, role) => [{ geometry: hipRoof(p.w, p.d, p.h, p.ridge), role }],
@@ -114,7 +114,7 @@ export const pediment = definePiece({
   params: z.object({
     w: positive(100).describe('width in meters along x'),
     h: positive(30).describe('height in meters'),
-    d: z.number().positive().max(10).describe('thickness in meters along z'),
+    d: z.number().positive().max(10).default(1).describe('thickness in meters along z'),
   }),
   example: { w: 12, h: 3, d: 1 },
   build: (p, role) => [{ geometry: gablePrism(p.w, p.d, p.h), role }],
