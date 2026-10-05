@@ -1,0 +1,16 @@
+{
+  "name": "Turismo SV",
+  "short_name": "Turismo SV",
+  "description": "Explora El Salvador como un diorama 3D.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#E8EBFA",
+  "theme_color": "#0F47AF",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
