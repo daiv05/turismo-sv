@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  kit:
+  node:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -15,6 +15,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: npx -y playwright@1.56.0 install --with-deps chromium
+      - run: echo "CHROMIUM_PATH=$(npx -y -p playwright@1.56.0 node -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
       - run: pnpm typecheck
       - run: pnpm test
 
@@ -23,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: docker compose --profile init run --rm s3-init
-      - run: docker compose up -d --build --wait
+      - run: docker compose up -d --build --wait postgres redis s3 php
       - run: docker compose exec -T php vendor/bin/pest
       - if: failure()
         run: docker compose logs

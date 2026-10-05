@@ -1,5 +1,6 @@
 import { PNG } from 'pngjs';
 import { buildModel } from '@turismo/kit';
+import { existsSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { modelToGlb } from '../src/glb';
 import { ThumbnailRenderer } from '../src/render';
@@ -13,14 +14,15 @@ const spec = {
   ],
 };
 
-const renderer = new ThumbnailRenderer({ chromiumPath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium' });
+const chromiumPath = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium';
+const renderer = new ThumbnailRenderer({ chromiumPath });
 afterAll(() => renderer.close());
 
 function pixels(png: Buffer): PNG {
   return PNG.sync.read(png);
 }
 
-describe('ThumbnailRenderer', () => {
+describe.skipIf(!existsSync(chromiumPath))('ThumbnailRenderer', () => {
   it('renders one PNG per angle with the requested size', async () => {
     const images = await renderer.render(await modelToGlb(buildModel(spec), { compress: true }), [-35, 35, 125], 256);
 
