@@ -7,9 +7,11 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "fetch:dem": "tsx src/cli/fetch-dem.ts",
-    "build:country": "tsx src/cli/build-country.ts"
+    "build:country": "tsx src/cli/build-country.ts",
+    "publish:tiles": "tsx src/cli/publish.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1146.0",
     "@gltf-transform/core": "^4.2.0",
     "@gltf-transform/extensions": "^4.2.0",
     "@gltf-transform/functions": "^4.2.0",

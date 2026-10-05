@@ -4,6 +4,7 @@ import { ContentController } from '../engine/contentController';
 import { Engine } from '../engine/engine';
 import { t } from '../i18n';
 import { parseRoute, pathFor } from '../routes';
+import { tilesetUrl } from '../tilesetUrl';
 import { getApi, useMapStore } from '../state/map';
 import CategoryChips from './CategoryChips.vue';
 import PlacePanel from './PlacePanel.vue';
@@ -15,10 +16,12 @@ let engine: Engine | null = null;
 let controller: ContentController | null = null;
 let selectedFromMap = false;
 
-onMounted(() => {
+onMounted(async () => {
   if (!canvas.value) return;
-  const version = new URLSearchParams(window.location.search).get('tileset') ?? 'dev';
-  engine = new Engine(canvas.value, { tilesetUrl: `/tiles/${encodeURIComponent(version)}/tileset.json` });
+  await store.loadConfig();
+  if (!canvas.value) return;
+  const override = new URLSearchParams(window.location.search).get('tileset');
+  engine = new Engine(canvas.value, { tilesetUrl: tilesetUrl({ tileset: store.tileset }, override) });
   controller = new ContentController({
     api: getApi(),
     onPlaces: (places) => engine?.setPlaces(places),
@@ -37,7 +40,6 @@ onMounted(() => {
     else store.clearSelection();
   });
   engine.start();
-  void store.loadConfig();
   void openRoute(parseRoute(window.location.pathname));
   window.addEventListener('popstate', onPopState);
   if (import.meta.env.DEV) (window as unknown as { __engine: Engine }).__engine = engine;

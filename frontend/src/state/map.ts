@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ApiClient, ApiError } from '../api/client';
-import type { ConfigCategory, Locale, PlaceDetail, SearchResponse } from '../api/types';
+import type { AppConfig, ConfigCategory, Locale, PlaceDetail, SearchResponse } from '../api/types';
 import type { ZoomLevel } from '../engine/zoom';
 
 let api = new ApiClient(import.meta.env?.VITE_API_URL ?? '');
@@ -22,6 +22,7 @@ export const useMapStore = defineStore('map', {
   state: () => ({
     locale: 'es' as Locale,
     categories: [] as ConfigCategory[],
+    tileset: null as AppConfig['tileset'],
     activeCategories: [] as string[],
     selectedSlug: null as string | null,
     detail: null as PlaceDetail | null,
@@ -37,7 +38,9 @@ export const useMapStore = defineStore('map', {
   actions: {
     async loadConfig(): Promise<void> {
       try {
-        this.categories = (await api.config()).categories;
+        const config = await api.config();
+        this.categories = config.categories;
+        this.tileset = config.tileset;
         this.error = null;
       } catch (error) {
         if (!(error instanceof ApiError)) throw error;
