@@ -32,6 +32,18 @@ class Place extends Model
 
     protected $hidden = ['location', 'footprint'];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $place) {
+            if (! $place->exists || $place->isDirty(['attributes', 'category_id'])) {
+                (new PlaceAttributesValidator())->validate(
+                    Category::query()->findOrFail($place->category_id),
+                    $place->getAttribute('attributes'),
+                );
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
