@@ -1,0 +1,220 @@
+{
+  "kitVersion": "1.0",
+  "footprint": {
+    "w": 70,
+    "d": 66
+  },
+  "parts": [
+    {
+      "type": "plinth",
+      "params": {
+        "w": 64,
+        "d": 48,
+        "h": 0.8
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "hall",
+      "params": {
+        "w": 60,
+        "d": 40,
+        "h": 14
+      },
+      "pos": [
+        0,
+        0.8,
+        0
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "hip-roof",
+      "params": {
+        "w": 60,
+        "d": 40,
+        "h": 4,
+        "ridge": 1
+      },
+      "pos": [
+        0,
+        14.8,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "colonnade",
+      "params": {
+        "n": 8,
+        "w": 36,
+        "h": 10,
+        "r": 0.7
+      },
+      "pos": [
+        0,
+        0.8,
+        22
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "arcade",
+      "params": {
+        "n": 9,
+        "w": 54,
+        "h": 6,
+        "d": 1.5
+      },
+      "pos": [
+        0,
+        0.8,
+        20.5
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "pediment",
+      "params": {
+        "w": 20,
+        "h": 4,
+        "d": 1.2
+      },
+      "pos": [
+        0,
+        10.8,
+        22
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "tower",
+      "params": {
+        "w": 10,
+        "d": 10,
+        "h": 10,
+        "taper": 0.8
+      },
+      "pos": [
+        0,
+        14.8,
+        0
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "hip-roof",
+      "params": {
+        "w": 9,
+        "d": 9,
+        "h": 5,
+        "ridge": 0
+      },
+      "pos": [
+        0,
+        24.8,
+        0
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "steps",
+      "params": {
+        "w": 16,
+        "d": 4,
+        "n": 4,
+        "h": 0.8
+      },
+      "pos": [
+        0,
+        0,
+        28
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "door",
+      "params": {
+        "w": 5,
+        "h": 7
+      },
+      "pos": [
+        0,
+        0.8,
+        20.05
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "window-strip",
+      "params": {
+        "n": 6,
+        "w": 40,
+        "h": 2.5
+      },
+      "pos": [
+        0,
+        6,
+        20.1
+      ],
+      "rot": 0,
+      "role": "glass"
+    },
+    {
+      "type": "window-strip",
+      "params": {
+        "n": 6,
+        "w": 40,
+        "h": 2.5
+      },
+      "pos": [
+        0,
+        10,
+        20.1
+      ],
+      "rot": 0,
+      "role": "glass"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4
+      },
+      "pos": [
+        -14,
+        0,
+        31
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4
+      },
+      "pos": [
+        14,
+        0,
+        31
+      ],
+      "rot": 0,
+      "role": "secondary"
+    }
+  ]
+}

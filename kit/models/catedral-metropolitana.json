@@ -1,0 +1,223 @@
+{
+  "kitVersion": "1.0",
+  "footprint": {
+    "w": 50,
+    "d": 80
+  },
+  "parts": [
+    {
+      "type": "plinth",
+      "params": {
+        "w": 46,
+        "d": 76,
+        "h": 0.6
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "steps",
+      "params": {
+        "w": 14,
+        "d": 5,
+        "n": 4,
+        "h": 0.6
+      },
+      "pos": [
+        0,
+        0.6,
+        28
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "hall",
+      "params": {
+        "w": 24,
+        "d": 50,
+        "h": 16
+      },
+      "pos": [
+        0,
+        0.6,
+        0
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "hall",
+      "params": {
+        "w": 40,
+        "d": 16,
+        "h": 14
+      },
+      "pos": [
+        0,
+        0.6,
+        -5
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "gable-roof",
+      "params": {
+        "w": 24,
+        "d": 50,
+        "h": 5
+      },
+      "pos": [
+        0,
+        16.6,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "dome",
+      "params": {
+        "r": 8,
+        "drum": 4
+      },
+      "pos": [
+        0,
+        14.6,
+        -5
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "belfry",
+      "params": {
+        "h": 30,
+        "w": 6
+      },
+      "pos": [
+        -9,
+        0.6,
+        22
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "belfry",
+      "params": {
+        "h": 30,
+        "w": 6
+      },
+      "pos": [
+        9,
+        0.6,
+        22
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "pediment",
+      "params": {
+        "w": 24,
+        "h": 6,
+        "d": 1
+      },
+      "pos": [
+        0,
+        16.6,
+        24.5
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "door",
+      "params": {
+        "w": 4,
+        "h": 7
+      },
+      "pos": [
+        0,
+        0.6,
+        25.05
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "window-strip",
+      "params": {
+        "n": 3,
+        "w": 8,
+        "h": 3
+      },
+      "pos": [
+        0,
+        8,
+        25.1
+      ],
+      "rot": 0,
+      "role": "glass"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 8
+      },
+      "pos": [
+        -20,
+        0,
+        32
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 8
+      },
+      "pos": [
+        20,
+        0,
+        32
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "palm",
+      "params": {
+        "h": 10
+      },
+      "pos": [
+        -20,
+        0,
+        -30
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "palm",
+      "params": {
+        "h": 10
+      },
+      "pos": [
+        20,
+        0,
+        -30
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    }
+  ]
+}

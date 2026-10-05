@@ -1,0 +1,266 @@
+{
+  "kitVersion": "1.0",
+  "footprint": {
+    "w": 60,
+    "d": 60
+  },
+  "parts": [
+    {
+      "type": "plaza-floor",
+      "params": {
+        "w": 56,
+        "d": 56
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "plinth",
+      "params": {
+        "w": 10,
+        "d": 10,
+        "h": 1.5
+      },
+      "pos": [
+        0,
+        0.2,
+        0
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "steps",
+      "params": {
+        "w": 8,
+        "d": 4,
+        "n": 3,
+        "h": 1.5
+      },
+      "pos": [
+        0,
+        0.2,
+        7
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "tower",
+      "params": {
+        "w": 3,
+        "d": 3,
+        "h": 22,
+        "taper": 0.7
+      },
+      "pos": [
+        0,
+        1.7,
+        0
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "dome",
+      "params": {
+        "r": 1.4,
+        "drum": 0
+      },
+      "pos": [
+        0,
+        23.7,
+        0
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "fountain",
+      "params": {
+        "r": 4
+      },
+      "pos": [
+        -14,
+        0.2,
+        14
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "fountain",
+      "params": {
+        "r": 4
+      },
+      "pos": [
+        14,
+        0.2,
+        14
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        -20,
+        0.2,
+        -20
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        20,
+        0.2,
+        -20
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        -20,
+        0.2,
+        20
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        20,
+        0.2,
+        20
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        -22,
+        0.2,
+        0
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-round",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        22,
+        0.2,
+        0
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "bench",
+      "params": {
+        "w": 2.2
+      },
+      "pos": [
+        -8,
+        0.2,
+        -12
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "bench",
+      "params": {
+        "w": 2.2
+      },
+      "pos": [
+        8,
+        0.2,
+        -12
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4.5
+      },
+      "pos": [
+        -12,
+        0.2,
+        -4
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4.5
+      },
+      "pos": [
+        12,
+        0.2,
+        -4
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4.5
+      },
+      "pos": [
+        -12,
+        0.2,
+        4
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4.5
+      },
+      "pos": [
+        12,
+        0.2,
+        4
+      ],
+      "rot": 0,
+      "role": "secondary"
+    }
+  ]
+}

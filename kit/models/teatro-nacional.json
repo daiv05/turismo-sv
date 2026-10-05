@@ -1,0 +1,196 @@
+{
+  "kitVersion": "1.0",
+  "footprint": {
+    "w": 40,
+    "d": 52
+  },
+  "parts": [
+    {
+      "type": "plinth",
+      "params": {
+        "w": 36,
+        "d": 46,
+        "h": 0.8
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "steps",
+      "params": {
+        "w": 14,
+        "d": 5,
+        "n": 5,
+        "h": 0.8
+      },
+      "pos": [
+        0,
+        0,
+        23
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "hall",
+      "params": {
+        "w": 28,
+        "d": 36,
+        "h": 14
+      },
+      "pos": [
+        0,
+        0.8,
+        -2
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "colonnade",
+      "params": {
+        "n": 6,
+        "w": 20,
+        "h": 11,
+        "r": 0.6
+      },
+      "pos": [
+        0,
+        0.8,
+        18
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "pediment",
+      "params": {
+        "w": 22,
+        "h": 4,
+        "d": 1.2
+      },
+      "pos": [
+        0,
+        11.8,
+        18
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "gable-roof",
+      "params": {
+        "w": 28,
+        "d": 36,
+        "h": 4
+      },
+      "pos": [
+        0,
+        14.8,
+        -2
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "dome",
+      "params": {
+        "r": 7,
+        "drum": 2
+      },
+      "pos": [
+        0,
+        14.8,
+        -2
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "door",
+      "params": {
+        "w": 4,
+        "h": 6
+      },
+      "pos": [
+        0,
+        0.8,
+        16.05
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "window-strip",
+      "params": {
+        "n": 5,
+        "w": 20,
+        "h": 3
+      },
+      "pos": [
+        0,
+        7,
+        16.1
+      ],
+      "rot": 0,
+      "role": "glass"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4
+      },
+      "pos": [
+        -12,
+        0,
+        26
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "lamp",
+      "params": {
+        "h": 4
+      },
+      "pos": [
+        12,
+        0,
+        26
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "tree-cone",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        -16,
+        0,
+        -22
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "tree-cone",
+      "params": {
+        "h": 9
+      },
+      "pos": [
+        16,
+        0,
+        -22
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    }
+  ]
+}

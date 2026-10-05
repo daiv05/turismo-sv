@@ -1,0 +1,182 @@
+{
+  "kitVersion": "1.0",
+  "footprint": {
+    "w": 36,
+    "d": 60
+  },
+  "parts": [
+    {
+      "type": "plinth",
+      "params": {
+        "w": 32,
+        "d": 54,
+        "h": 0.6
+      },
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "hall",
+      "params": {
+        "w": 14,
+        "d": 40,
+        "h": 12
+      },
+      "pos": [
+        0,
+        0.6,
+        0
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "gable-roof",
+      "params": {
+        "w": 18,
+        "d": 42,
+        "h": 12
+      },
+      "pos": [
+        0,
+        12.6,
+        0
+      ],
+      "rot": 0,
+      "role": "accent"
+    },
+    {
+      "type": "tower",
+      "params": {
+        "w": 5,
+        "d": 5,
+        "h": 36,
+        "taper": 0.7
+      },
+      "pos": [
+        -11,
+        0.6,
+        16
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "steps",
+      "params": {
+        "w": 8,
+        "d": 4,
+        "n": 3,
+        "h": 0.6
+      },
+      "pos": [
+        0,
+        0.6,
+        23
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "door",
+      "params": {
+        "w": 3.5,
+        "h": 5.5
+      },
+      "pos": [
+        0,
+        0.6,
+        20.05
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "window-strip",
+      "params": {
+        "n": 3,
+        "w": 8,
+        "h": 3
+      },
+      "pos": [
+        0,
+        6,
+        20.1
+      ],
+      "rot": 0,
+      "role": "glass"
+    },
+    {
+      "type": "kiosk",
+      "params": {
+        "w": 3,
+        "d": 3,
+        "h": 3.5
+      },
+      "pos": [
+        14,
+        0,
+        22
+      ],
+      "rot": 0,
+      "role": "neutral"
+    },
+    {
+      "type": "bench",
+      "params": {
+        "w": 2
+      },
+      "pos": [
+        -10,
+        0,
+        26
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "bench",
+      "params": {
+        "w": 2
+      },
+      "pos": [
+        10,
+        0,
+        26
+      ],
+      "rot": 0,
+      "role": "secondary"
+    },
+    {
+      "type": "palm",
+      "params": {
+        "h": 10
+      },
+      "pos": [
+        -14,
+        0,
+        -24
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    },
+    {
+      "type": "palm",
+      "params": {
+        "h": 10
+      },
+      "pos": [
+        14,
+        0,
+        -24
+      ],
+      "rot": 0,
+      "role": "vegetation"
+    }
+  ]
+}
