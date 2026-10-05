@@ -20,13 +20,20 @@ import {
   initialCameraState,
   type CameraState,
 } from './camera';
+import { tileBudget } from './budget';
 import { TypedEmitter } from './emitter';
+import { TerrainTiles } from './tiles';
 import { nextPixelRatio } from './quality';
 import { zoomLevelForDistance, type ZoomLevel } from './zoom';
 
 export interface EngineEvents {
   zoomLevelChanged: { level: ZoomLevel; distance: number };
   qualityChanged: { pixelRatio: number };
+  tilesError: { error: unknown };
+}
+
+export interface EngineOptions {
+  tilesetUrl?: string;
 }
 
 /**
@@ -47,13 +54,18 @@ export class Engine {
   private raf = 0;
   private drag: { x: number; y: number; mode: 'pan' | 'orbit' } | null = null;
   private readonly cleanups: Array<() => void> = [];
+  private terrain: TerrainTiles | null = null;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    options: EngineOptions = {},
+  ) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true });
     this.pixelRatio = Math.min(window.devicePixelRatio, 2);
     this.renderer.setPixelRatio(this.pixelRatio);
     this.scene.background = new Color(PALETTE.ground);
-    this.buildScene();
+    this.buildScene(options.tilesetUrl === undefined);
+    if (options.tilesetUrl !== undefined) this.loadTerrain(options.tilesetUrl);
     this.bindInput();
     this.resize();
   }
@@ -69,6 +81,7 @@ export class Engine {
   dispose(): void {
     cancelAnimationFrame(this.raf);
     this.cleanups.forEach((fn) => fn());
+    this.terrain?.dispose();
     this.renderer.dispose();
   }
 
@@ -78,9 +91,19 @@ export class Engine {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    this.terrain?.resize(this.camera, this.renderer);
   }
 
-  private buildScene(): void {
+  private loadTerrain(url: string): void {
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    this.terrain = new TerrainTiles(url, this.camera, this.renderer, tileBudget({ isMobile, deviceMemoryGb: memory }), {
+      onError: (error) => this.events.emit('tilesError', { error }),
+    });
+    this.scene.add(this.terrain.group);
+  }
+
+  private buildScene(withPlaceholderLand: boolean): void {
     const oceanMaterial = new MeshLambertMaterial({ color: PALETTE.water, depthWrite: false });
     const ocean = new Mesh(new PlaneGeometry(4_000_000, 4_000_000), oceanMaterial);
     ocean.rotation.x = -Math.PI / 2;
@@ -88,9 +111,11 @@ export class Engine {
     ocean.renderOrder = -1;
     this.scene.add(ocean);
 
-    const land = new Mesh(new PlaneGeometry(260_000, 120_000), new MeshLambertMaterial({ color: PALETTE.neutral }));
-    land.rotation.x = -Math.PI / 2;
-    this.scene.add(land);
+    if (withPlaceholderLand) {
+      const land = new Mesh(new PlaneGeometry(260_000, 120_000), new MeshLambertMaterial({ color: PALETTE.neutral }));
+      land.rotation.x = -Math.PI / 2;
+      this.scene.add(land);
+    }
 
     this.scene.add(new AmbientLight(0xffffff, 1.8));
     const sun = new DirectionalLight(0xffffff, 1.6);
@@ -139,6 +164,8 @@ export class Engine {
     this.camera.near = Math.max(10, this.state.distance * 0.02);
     this.camera.far = this.state.distance * 8;
     this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld();
+    this.terrain?.update();
     this.renderer.render(this.scene, this.camera);
 
     const level = zoomLevelForDistance(this.state.distance);
