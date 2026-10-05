@@ -2,3 +2,4 @@ packages:
   - kit
   - frontend
   - pipeline
+  - builder-service
