@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'builder' => [
+        'url' => env('BUILDER_URL', 'http://builder:3100'),
+        'token' => env('BUILDER_TOKEN'),
+        'timeout' => (int) env('BUILDER_TIMEOUT', 120),
+    ],
+
 ];
