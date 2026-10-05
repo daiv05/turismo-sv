@@ -7,8 +7,12 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  Vector2,
+  Vector3,
   WebGLRenderer,
 } from 'three';
+import { lonLatToScene } from '@turismo/kit/geo';
+import type { PlaceSummary } from '../api/types';
 import { PALETTE } from '@turismo/kit/palette';
 import {
   CAMERA_FOV_DEGREES,
@@ -17,11 +21,17 @@ import {
   applyTilt,
   applyZoom,
   cameraPosition,
+  easeInOut,
+  framePoint,
   initialCameraState,
+  interpolateCamera,
+  visibleBounds,
   type CameraState,
+  type GroundBounds,
 } from './camera';
 import { tileBudget } from './budget';
 import { TypedEmitter } from './emitter';
+import { SitesLayer } from './sitesLayer';
 import { TerrainTiles } from './tiles';
 import { nextPixelRatio } from './quality';
 import { zoomLevelForDistance, type ZoomLevel } from './zoom';
@@ -30,6 +40,8 @@ export interface EngineEvents {
   zoomLevelChanged: { level: ZoomLevel; distance: number };
   qualityChanged: { pixelRatio: number };
   tilesError: { error: unknown };
+  viewChanged: { bounds: GroundBounds; level: ZoomLevel; distance: number };
+  placeSelected: { slug: string | null };
 }
 
 export interface EngineOptions {
@@ -55,6 +67,12 @@ export class Engine {
   private drag: { x: number; y: number; mode: 'pan' | 'orbit' } | null = null;
   private readonly cleanups: Array<() => void> = [];
   private terrain: TerrainTiles | null = null;
+  private readonly sites = new SitesLayer();
+  private flight: { from: CameraState; to: CameraState; started: number; duration: number } | null = null;
+  private lastViewKey = '';
+  private viewTimer = 0;
+  private pointerDown: { x: number; y: number } | null = null;
+  private readonly pointer = new Vector2();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -65,6 +83,7 @@ export class Engine {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.scene.background = new Color(PALETTE.ground);
     this.buildScene(options.tilesetUrl === undefined);
+    this.scene.add(this.sites.group);
     if (options.tilesetUrl !== undefined) this.loadTerrain(options.tilesetUrl);
     this.bindInput();
     this.resize();
@@ -81,8 +100,44 @@ export class Engine {
   dispose(): void {
     cancelAnimationFrame(this.raf);
     this.cleanups.forEach((fn) => fn());
+    clearTimeout(this.viewTimer);
     this.terrain?.dispose();
+    this.sites.dispose();
     this.renderer.dispose();
+  }
+
+  /**
+   * Replaces the places drawn on the map.
+   */
+  setPlaces(places: readonly PlaceSummary[]): void {
+    this.sites.setPlaces(places);
+  }
+
+  /**
+   * Highlights a place and flies the camera to it. Pass null to clear the selection.
+   */
+  select(slug: string | null, options: { fly?: boolean } = {}): void {
+    this.sites.setSelected(slug);
+    if (slug && options.fly !== false) {
+      const at = this.sites.positionOf(slug);
+      if (at) this.flyTo({ x: at.x, z: at.z }, 900);
+    }
+  }
+
+  /**
+   * Animates the camera to a scene point.
+   */
+  flyTo(point: { x: number; z: number }, distance: number, durationMs = 1200): void {
+    this.flight = { from: this.state, to: framePoint(this.state, point, distance), started: performance.now(), duration: durationMs };
+  }
+
+  /**
+   * Animates the camera to a WGS84 coordinate.
+   *
+   * @throws {RangeError} When the coordinate lies outside El Salvador's projection bounds.
+   */
+  flyToLonLat(lon: number, lat: number, distance: number, durationMs = 1200): void {
+    this.flyTo(lonLatToScene({ lon, lat }), distance, durationMs);
   }
 
   resize(): void {
@@ -129,6 +184,8 @@ export class Engine {
       this.cleanups.push(() => this.canvas.removeEventListener(type, handler));
     };
     on('pointerdown', (e) => {
+      this.flight = null;
+      this.pointerDown = { x: e.clientX, y: e.clientY };
       this.canvas.setPointerCapture(e.pointerId);
       this.drag = { x: e.clientX, y: e.clientY, mode: e.button === 2 || e.shiftKey ? 'orbit' : 'pan' };
     });
@@ -144,8 +201,11 @@ export class Engine {
         this.state = applyTilt(applyRotate(this.state, dx * 0.2), dy * 0.2);
       }
     });
-    on('pointerup', () => {
+    on('pointerup', (e) => {
       this.drag = null;
+      const down = this.pointerDown;
+      this.pointerDown = null;
+      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5 && e.button === 0) this.pickAt(e);
     });
     on('contextmenu', (e) => e.preventDefault());
     on('wheel', (e) => {
@@ -157,7 +217,40 @@ export class Engine {
     this.cleanups.push(() => window.removeEventListener('resize', onResize));
   }
 
+  private pickAt(event: PointerEvent): void {
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    this.camera.updateMatrixWorld();
+    const origin = new Vector3(this.pointer.x, this.pointer.y, -1).unproject(this.camera);
+    const target = new Vector3(this.pointer.x, this.pointer.y, 1).unproject(this.camera);
+    const slug = this.sites.pick(origin, target.sub(origin).normalize());
+    this.sites.setSelected(slug);
+    this.events.emit('placeSelected', { slug });
+  }
+
+  private advanceFlight(): void {
+    if (!this.flight) return;
+    const t = (performance.now() - this.flight.started) / this.flight.duration;
+    this.state = interpolateCamera(this.flight.from, this.flight.to, easeInOut(t));
+    if (t >= 1) this.flight = null;
+  }
+
+  private scheduleViewChange(): void {
+    const key = `${this.state.target.x.toFixed(0)}|${this.state.target.z.toFixed(0)}|${this.state.distance.toFixed(0)}|${this.state.yaw.toFixed(1)}|${this.state.tilt.toFixed(1)}|${this.camera.aspect.toFixed(2)}`;
+    if (key === this.lastViewKey) return;
+    this.lastViewKey = key;
+    clearTimeout(this.viewTimer);
+    this.viewTimer = window.setTimeout(() => {
+      this.events.emit('viewChanged', {
+        bounds: visibleBounds(this.state, this.camera.aspect),
+        level: zoomLevelForDistance(this.state.distance),
+        distance: this.state.distance,
+      });
+    }, 150);
+  }
+
   private tick(): void {
+    this.advanceFlight();
     const p = cameraPosition(this.state);
     this.camera.position.set(p.x, p.y, p.z);
     this.camera.lookAt(this.state.target.x, 0, this.state.target.z);
@@ -166,7 +259,9 @@ export class Engine {
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
     this.terrain?.update();
+    this.sites.update(this.state.distance, this.terrain?.group ?? null, this.terrain?.version ?? 0);
     this.renderer.render(this.scene, this.camera);
+    this.scheduleViewChange();
 
     const level = zoomLevelForDistance(this.state.distance);
     if (level !== this.level) {

@@ -16,6 +16,7 @@ export class TerrainTiles {
   readonly group = new Group();
   private readonly tiles: TilesRenderer;
   private readonly material = new MeshLambertMaterial({ vertexColors: true });
+  private loadedVersion = 0;
 
   constructor(url: string, camera: Camera, renderer: WebGLRenderer, budget: TileBudget, events: TerrainTilesEvents = {}) {
     this.tiles = new TilesRenderer(url);
@@ -26,6 +27,7 @@ export class TerrainTiles {
     this.tiles.setCamera(camera);
     this.tiles.setResolutionFromRenderer(camera, renderer);
     this.tiles.addEventListener('load-model', (event: { scene: Object3D }) => {
+      this.loadedVersion++;
       event.scene.traverse((object) => {
         if ((object as Mesh).isMesh) (object as Mesh).material = this.material;
       });
@@ -33,6 +35,13 @@ export class TerrainTiles {
     this.tiles.addEventListener('load-error', (event: { error: unknown }) => events.onError?.(event.error));
     this.group.rotation.x = -Math.PI / 2;
     this.group.add(this.tiles.group);
+  }
+
+  /**
+   * Counter that changes whenever a tile is loaded, so dependents can re-sample the terrain.
+   */
+  get version(): number {
+    return this.loadedVersion;
   }
 
   update(): void {
