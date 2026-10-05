@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Tilesets\TileRebuild;
 use App\Domain\Tilesets\TilesetVersion;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class RegisterTileset extends Command
             ]);
             if (! $this->option('no-activate')) {
                 $this->switchTo($version);
+                TileRebuild::query()->where('status', 'pending')->update(['status' => 'done']);
             }
         });
 

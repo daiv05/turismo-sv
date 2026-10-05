@@ -83,3 +83,43 @@ describe('terrainColor', () => {
     expect(() => hexToLinear('red')).toThrow(RangeError);
   });
 });
+
+describe('buildings and exclusions in tiles', () => {
+  const bounds2 = { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 };
+  const base = { bounds: bounds2, levels: 3, samples: 9, heightAt: () => 50, isLand: () => true, compress: false };
+  const ring = (lon: number, lat: number): Array<[number, number]> => [[lon, lat], [lon + 0.0002, lat], [lon + 0.0002, lat + 0.0002], [lon, lat + 0.0002], [lon, lat]];
+  const buildings = [
+    { id: 'in', ring: ring(-88.9, 13.75), levels: 3 },
+    { id: 'far', ring: ring(-88.895, 13.745), levels: 3 },
+  ];
+
+  async function sizes(extra: object) {
+    const files = new Map<string, Uint8Array | string>();
+    await buildTileTree({ ...base, ...extra, write: async (path: string, data: Uint8Array | string) => void files.set(path, data) } as never);
+    return { files, leaf: (files.get('tiles/2_1_1.glb') as Uint8Array | undefined)?.byteLength ?? 0, all: [...files.entries()].filter(([k]) => k.endsWith('.glb')).reduce((n, [, v]) => n + (v as Uint8Array).byteLength, 0) };
+  }
+
+  it('adds generic buildings to tiles from the configured level on', async () => {
+    const without = await sizes({});
+    const withBuildings = await sizes({ buildings: () => buildings, buildingsFromLevel: 2 });
+
+    expect(withBuildings.all).toBeGreaterThan(without.all);
+  });
+
+  it('does not add buildings to coarse tiles', async () => {
+    const coarse = await sizes({ buildings: () => buildings, buildingsFromLevel: 3 });
+    const without = await sizes({});
+
+    expect(coarse.all).toBe(without.all);
+  });
+
+  it('leaves out the buildings that fall inside an exclusion footprint', async () => {
+    const exclusion = { type: 'Polygon' as const, coordinates: [[[-88.9005, 13.7495], [-88.8995, 13.7495], [-88.8995, 13.7505], [-88.9005, 13.7505], [-88.9005, 13.7495]]] as Array<[number, number]>[] };
+    const all = await sizes({ buildings: () => buildings, buildingsFromLevel: 2 });
+    const excluded = await sizes({ buildings: () => buildings, buildingsFromLevel: 2, exclusions: [exclusion] });
+    const none = await sizes({});
+
+    expect(excluded.all).toBeLessThan(all.all);
+    expect(excluded.all).toBeGreaterThan(none.all);
+  });
+});

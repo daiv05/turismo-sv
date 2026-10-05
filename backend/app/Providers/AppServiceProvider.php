@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Domain\Places\Place;
 use App\Domain\Promotions\Promotion;
+use App\Events\PlaceModelApproved;
+use App\Listeners\RequestTileRebuild;
 use App\Policies\PlacePolicy;
+use Illuminate\Support\Facades\Event;
 use App\Policies\PromotionPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -29,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Translatable::fallback(fallbackLocale: 'es');
+        Event::listen(PlaceModelApproved::class, RequestTileRebuild::class);
         Gate::policy(Place::class, PlacePolicy::class);
         Gate::policy(Promotion::class, PromotionPolicy::class);
         RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(config('api.rate_limit'))->by($request->ip()));

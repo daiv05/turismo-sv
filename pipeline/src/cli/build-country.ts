@@ -3,6 +3,9 @@ import { dirname } from 'node:path';
 import { fromFile } from 'geotiff';
 import { lonLatToScene, sceneToLonLat } from '@turismo/kit/geo';
 import { buildTileTree } from '../build';
+import { affectedTiles } from '../buildings';
+import { buildQuadtree } from '../quadtree';
+import { loadBuildings, loadExclusions } from './osm-fixture';
 import { bboxOfRings, maskAt, rasterizeMask, type MultiPolygon } from '../geometry';
 import { DATA_DIR, DEM_TILES, OUT_DIR } from './paths';
 
@@ -45,6 +48,12 @@ function demHeight(tiles: Map<string, DemTile>, lon: number, lat: number): numbe
   return (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - ty) + (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * ty;
 }
 
+function buildingInArea(building: { ring: Array<[number, number]> }, area: { minX: number; maxX: number; minZ: number; maxZ: number }): boolean {
+  const [lon, lat] = building.ring[0] ?? [0, 0];
+  const { x, z } = lonLatToScene({ lon, lat });
+  return x >= area.minX && x < area.maxX && z >= area.minZ && z < area.maxZ;
+}
+
 async function main(): Promise<void> {
   const geometry = JSON.parse(await readFile(`${DATA_DIR}slv-boundary.json`, 'utf8')) as { type: string; coordinates: unknown };
   const polygons = (geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates) as MultiPolygon;
@@ -75,6 +84,13 @@ async function main(): Promise<void> {
     return maskAt(mask, lon, lat) && demHeight(dem, lon, lat) > 0.5;
   };
 
+  const buildings = process.env.BUILDINGS_FILE ? await loadBuildings(process.env.BUILDINGS_FILE) : [];
+  const exclusions = process.env.EXCLUSIONS_FILE ? await loadExclusions(process.env.EXCLUSIONS_FILE) : [];
+  if (exclusions.length > 0) {
+    const changed = affectedTiles(buildQuadtree(bounds, LEVELS, SAMPLES), exclusions);
+    console.log(`${exclusions.length} exclusion footprint(s) change ${changed.length} tile(s)`);
+  }
+
   const target = `${OUT_DIR}${VERSION}/`;
   await rm(target, { recursive: true, force: true });
   const started = Date.now();
@@ -86,6 +102,8 @@ async function main(): Promise<void> {
     isLand,
     compress: true,
     heightScale: HEIGHT_SCALE,
+    exclusions,
+    ...(buildings.length > 0 ? { buildings: (area) => buildings.filter((b) => buildingInArea(b, area)), buildingsFromLevel: Number(process.env.BUILDINGS_FROM_LEVEL ?? LEVELS - 2) } : {}),
     write: async (path, data) => {
       const file = `${target}${path}`;
       await mkdir(dirname(file), { recursive: true });
