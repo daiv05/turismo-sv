@@ -12,6 +12,10 @@ export function setApi(client: ApiClient): void {
   api = client;
 }
 
+export function getApi(): ApiClient {
+  return api;
+}
+
 export type ErrorKind = 'network' | 'notFound' | null;
 
 export const useMapStore = defineStore('map', {

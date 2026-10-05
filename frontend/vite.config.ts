@@ -37,5 +37,9 @@ function localTiles(): Plugin {
 
 export default defineConfig({
   plugins: [vue(), localTiles()],
-  server: { host: '0.0.0.0', port: 5173 },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: { '/api': { target: process.env.API_URL ?? 'http://localhost:8000', changeOrigin: true } },
+  },
 });

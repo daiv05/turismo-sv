@@ -6,6 +6,7 @@ import {
   MeshLambertMaterial,
   PerspectiveCamera,
   PlaneGeometry,
+  Raycaster,
   Scene,
   Vector2,
   Vector3,
@@ -73,6 +74,10 @@ export class Engine {
   private viewTimer = 0;
   private pointerDown: { x: number; y: number } | null = null;
   private readonly pointer = new Vector2();
+  private elevation = 0;
+  private elevationGoal = 0;
+  private elevationKey = '';
+  private readonly elevationRay = new Raycaster();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -228,6 +233,24 @@ export class Engine {
     this.events.emit('placeSelected', { slug });
   }
 
+  /**
+   * Follows the terrain height under the camera target so the rig never ends up below the surface.
+   * The height is re-sampled only when the target moved or new tiles loaded, then eased in.
+   */
+  private updateElevation(): void {
+    if (!this.terrain) return;
+    const key = `${this.state.target.x.toFixed(0)}|${this.state.target.z.toFixed(0)}|${this.terrain.version}`;
+    if (key !== this.elevationKey) {
+      this.elevationKey = key;
+      this.elevationRay.set(new Vector3(this.state.target.x, 20_000, this.state.target.z), new Vector3(0, -1, 0));
+      this.elevationRay.far = 40_000;
+      const hit = this.elevationRay.intersectObject(this.terrain.group, true)[0];
+      if (hit) this.elevationGoal = Math.max(0, hit.point.y);
+    }
+    this.elevation += (this.elevationGoal - this.elevation) * 0.2;
+    if (Math.abs(this.elevationGoal - this.elevation) < 0.5) this.elevation = this.elevationGoal;
+  }
+
   private advanceFlight(): void {
     if (!this.flight) return;
     const t = (performance.now() - this.flight.started) / this.flight.duration;
@@ -242,7 +265,7 @@ export class Engine {
     clearTimeout(this.viewTimer);
     this.viewTimer = window.setTimeout(() => {
       this.events.emit('viewChanged', {
-        bounds: visibleBounds(this.state, this.camera.aspect),
+        bounds: visibleBounds({ ...this.state, elevation: this.elevation }, this.camera.aspect),
         level: zoomLevelForDistance(this.state.distance),
         distance: this.state.distance,
       });
@@ -251,9 +274,11 @@ export class Engine {
 
   private tick(): void {
     this.advanceFlight();
-    const p = cameraPosition(this.state);
+    this.updateElevation();
+    const rig: CameraState = { ...this.state, elevation: this.elevation };
+    const p = cameraPosition(rig);
     this.camera.position.set(p.x, p.y, p.z);
-    this.camera.lookAt(this.state.target.x, 0, this.state.target.z);
+    this.camera.lookAt(this.state.target.x, this.elevation, this.state.target.z);
     this.camera.near = Math.max(10, this.state.distance * 0.02);
     this.camera.far = this.state.distance * 8;
     this.camera.updateProjectionMatrix();

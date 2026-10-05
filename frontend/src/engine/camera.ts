@@ -14,6 +14,8 @@ export interface CameraState {
   distance: number;
   tilt: number;
   yaw: number;
+  /** Terrain height in scene meters under the target; the whole rig is lifted by it. */
+  elevation?: number;
 }
 
 export interface Vec3 {
@@ -78,7 +80,7 @@ export function cameraPosition(state: CameraState): Vec3 {
   const horizontal = state.distance * Math.cos(tilt);
   return {
     x: state.target.x + horizontal * Math.sin(yaw),
-    y: state.distance * Math.sin(tilt),
+    y: (state.elevation ?? 0) + state.distance * Math.sin(tilt),
     z: state.target.z + horizontal * Math.cos(yaw),
   };
 }
@@ -102,7 +104,9 @@ export function visibleBounds(state: CameraState, aspect: number): GroundBounds 
     throw new RangeError(`Aspect ratio must be positive and finite, received ${aspect}`);
   }
   const eye = cameraPosition(state);
-  const toTarget = { x: state.target.x - eye.x, y: -eye.y, z: state.target.z - eye.z };
+  const ground = state.elevation ?? 0;
+  const height = eye.y - ground;
+  const toTarget = { x: state.target.x - eye.x, y: -height, z: state.target.z - eye.z };
   const length = Math.hypot(toTarget.x, toTarget.y, toTarget.z);
   const forward = { x: toTarget.x / length, y: toTarget.y / length, z: toTarget.z / length };
   const rightRaw = { x: -forward.z, y: 0, z: forward.x };
@@ -124,7 +128,7 @@ export function visibleBounds(state: CameraState, aspect: number): GroundBounds 
       z: forward.z + right.z * sx * half * aspect + up.z * sy * half,
     };
     const norm = Math.hypot(dir.x, dir.y, dir.z);
-    let t = dir.y < -1e-6 ? -eye.y / dir.y : Infinity;
+    let t = dir.y < -1e-6 ? -height / dir.y : Infinity;
     if (!(t * norm <= maxReach)) t = maxReach / norm;
     bounds.minX = Math.min(bounds.minX, eye.x + dir.x * t);
     bounds.maxX = Math.max(bounds.maxX, eye.x + dir.x * t);

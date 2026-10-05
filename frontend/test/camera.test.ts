@@ -174,3 +174,26 @@ describe('framePoint', () => {
     expect(framePoint(base, { x: 0, z: 0 }, 1).distance).toBe(CAMERA_LIMITS.minDistance);
   });
 });
+
+describe('camera elevation', () => {
+  it('lifts the camera by the terrain elevation under the target', () => {
+    const flat = cameraPosition(base);
+    const raised = cameraPosition({ ...base, elevation: 1_500 });
+
+    expect(raised.y).toBeCloseTo(flat.y + 1_500, 6);
+    expect(raised.x).toBeCloseTo(flat.x, 6);
+    expect(raised.z).toBeCloseTo(flat.z, 6);
+  });
+
+  it('defaults to sea level', () => {
+    expect(cameraPosition({ ...base, elevation: 0 })).toEqual(cameraPosition(base));
+  });
+
+  it('computes visible bounds against the raised ground plane', () => {
+    const sea = visibleBounds({ ...base, distance: 4_000 }, 1.5);
+    const high = visibleBounds({ ...base, distance: 4_000, elevation: 3_000 }, 1.5);
+
+    expect(high.maxX - high.minX).toBeCloseTo(sea.maxX - sea.minX, 3);
+    expect((high.minZ + high.maxZ) / 2).toBeCloseTo((sea.minZ + sea.maxZ) / 2, 3);
+  });
+});
