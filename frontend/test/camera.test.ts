@@ -7,7 +7,11 @@ import {
   applyTilt,
   applyZoom,
   cameraPosition,
+  easeInOut,
+  framePoint,
   initialCameraState,
+  interpolateCamera,
+  visibleBounds,
   type CameraState,
 } from '../src/engine/camera';
 
@@ -90,5 +94,83 @@ describe('cameraPosition', () => {
 describe('initialCameraState', () => {
   it('starts at country level', () => {
     expect(initialCameraState().distance).toBe(CAMERA_LIMITS.maxDistance);
+  });
+});
+
+describe('visibleBounds', () => {
+  const state: CameraState = { target: { x: 1000, z: -500 }, distance: 10_000, tilt: 45, yaw: 0 };
+
+  it('contains the target', () => {
+    const b = visibleBounds(state, 16 / 9);
+    expect(b.minX).toBeLessThan(1000);
+    expect(b.maxX).toBeGreaterThan(1000);
+    expect(b.minZ).toBeLessThan(-500);
+    expect(b.maxZ).toBeGreaterThan(-500);
+  });
+
+  it('grows with distance', () => {
+    const near = visibleBounds({ ...state, distance: 2_000 }, 1.5);
+    const far = visibleBounds({ ...state, distance: 20_000 }, 1.5);
+    expect(far.maxX - far.minX).toBeGreaterThan(near.maxX - near.minX);
+  });
+
+  it('is wider on wider screens', () => {
+    const narrow = visibleBounds(state, 0.6);
+    const wide = visibleBounds(state, 2);
+    expect(wide.maxX - wide.minX).toBeGreaterThan(narrow.maxX - narrow.minX);
+  });
+
+  it('stays finite at the flattest tilt', () => {
+    const b = visibleBounds({ ...state, tilt: 35 }, 2);
+    for (const v of Object.values(b)) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it('rejects invalid aspect ratios', () => {
+    expect(() => visibleBounds(state, 0)).toThrow(RangeError);
+  });
+});
+
+describe('interpolateCamera', () => {
+  const a: CameraState = { target: { x: 0, z: 0 }, distance: 100_000, tilt: 40, yaw: -20 };
+  const b: CameraState = { target: { x: 10_000, z: -4_000 }, distance: 1_000, tilt: 55, yaw: 20 };
+
+  it('returns the endpoints at t=0 and t=1', () => {
+    expect(interpolateCamera(a, b, 0)).toEqual(a);
+    expect(interpolateCamera(a, b, 1)).toEqual(b);
+  });
+
+  it('interpolates distance geometrically so zoom feels even', () => {
+    expect(interpolateCamera(a, b, 0.5).distance).toBeCloseTo(10_000, 3);
+  });
+
+  it('clamps t to the unit interval', () => {
+    expect(interpolateCamera(a, b, 2)).toEqual(b);
+    expect(interpolateCamera(a, b, -1)).toEqual(a);
+  });
+});
+
+describe('easeInOut', () => {
+  it('starts at zero, ends at one and is monotonic', () => {
+    expect(easeInOut(0)).toBe(0);
+    expect(easeInOut(1)).toBe(1);
+    let last = 0;
+    for (let i = 1; i <= 20; i++) {
+      const v = easeInOut(i / 20);
+      expect(v).toBeGreaterThanOrEqual(last);
+      last = v;
+    }
+  });
+});
+
+describe('framePoint', () => {
+  it('targets a scene point at the requested distance keeping tilt and yaw', () => {
+    const next = framePoint(base, { x: 500, z: 700 }, 2_000);
+    expect(next.target).toEqual({ x: 500, z: 700 });
+    expect(next.distance).toBe(2_000);
+    expect(next.tilt).toBe(base.tilt);
+  });
+
+  it('clamps the distance to the camera limits', () => {
+    expect(framePoint(base, { x: 0, z: 0 }, 1).distance).toBe(CAMERA_LIMITS.minDistance);
   });
 });

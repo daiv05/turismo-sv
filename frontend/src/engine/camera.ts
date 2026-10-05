@@ -82,3 +82,83 @@ export function cameraPosition(state: CameraState): Vec3 {
     z: state.target.z + horizontal * Math.cos(yaw),
   };
 }
+
+export interface GroundBounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/**
+ * Approximates the ground rectangle seen by the camera at sea level by intersecting the four screen corner rays
+ * with the plane y = 0. Rays that miss the plane, or hit it too far away, are cut at six times the camera distance.
+ *
+ * @param aspect Viewport width divided by height.
+ * @throws {RangeError} When the aspect ratio is not positive and finite.
+ */
+export function visibleBounds(state: CameraState, aspect: number): GroundBounds {
+  if (!Number.isFinite(aspect) || aspect <= 0) {
+    throw new RangeError(`Aspect ratio must be positive and finite, received ${aspect}`);
+  }
+  const eye = cameraPosition(state);
+  const toTarget = { x: state.target.x - eye.x, y: -eye.y, z: state.target.z - eye.z };
+  const length = Math.hypot(toTarget.x, toTarget.y, toTarget.z);
+  const forward = { x: toTarget.x / length, y: toTarget.y / length, z: toTarget.z / length };
+  const rightRaw = { x: -forward.z, y: 0, z: forward.x };
+  const rightLength = Math.hypot(rightRaw.x, rightRaw.z);
+  const right = { x: rightRaw.x / rightLength, y: 0, z: rightRaw.z / rightLength };
+  const up = {
+    x: right.y * forward.z - right.z * forward.y,
+    y: right.z * forward.x - right.x * forward.z,
+    z: right.x * forward.y - right.y * forward.x,
+  };
+  const half = Math.tan((CAMERA_FOV_DEGREES * Math.PI) / 360);
+  const maxReach = state.distance * 6;
+  const bounds: GroundBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+
+  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+    const dir = {
+      x: forward.x + right.x * sx * half * aspect + up.x * sy * half,
+      y: forward.y + right.y * sx * half * aspect + up.y * sy * half,
+      z: forward.z + right.z * sx * half * aspect + up.z * sy * half,
+    };
+    const norm = Math.hypot(dir.x, dir.y, dir.z);
+    let t = dir.y < -1e-6 ? -eye.y / dir.y : Infinity;
+    if (!(t * norm <= maxReach)) t = maxReach / norm;
+    bounds.minX = Math.min(bounds.minX, eye.x + dir.x * t);
+    bounds.maxX = Math.max(bounds.maxX, eye.x + dir.x * t);
+    bounds.minZ = Math.min(bounds.minZ, eye.z + dir.z * t);
+    bounds.maxZ = Math.max(bounds.maxZ, eye.z + dir.z * t);
+  }
+  return bounds;
+}
+
+/**
+ * Blends two camera states. Distance changes geometrically so a long zoom feels even.
+ *
+ * @param t Progress, clamped to the unit interval.
+ */
+export function interpolateCamera(from: CameraState, to: CameraState, t: number): CameraState {
+  if (t <= 0) return { ...from, target: { ...from.target } };
+  if (t >= 1) return { ...to, target: { ...to.target } };
+  const lerp = (a: number, b: number): number => a + (b - a) * t;
+  return {
+    target: { x: lerp(from.target.x, to.target.x), z: lerp(from.target.z, to.target.z) },
+    distance: from.distance * Math.pow(to.distance / from.distance, t),
+    tilt: lerp(from.tilt, to.tilt),
+    yaw: lerp(from.yaw, to.yaw),
+  };
+}
+
+export function easeInOut(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return clamped < 0.5 ? 4 * clamped ** 3 : 1 - (-2 * clamped + 2) ** 3 / 2;
+}
+
+/**
+ * Centers the camera on a scene point at a distance, keeping tilt and yaw.
+ */
+export function framePoint(state: CameraState, point: { x: number; z: number }, distance: number): CameraState {
+  return { ...state, target: { x: point.x, z: point.z }, distance: clamp(distance, CAMERA_LIMITS.minDistance, CAMERA_LIMITS.maxDistance) };
+}
