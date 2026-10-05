@@ -25,7 +25,7 @@ Restricciones: un solo desarrollador asistido por Claude, sin fecha fija; la cal
 |---|---|
 | País | El Salvador, iniciando por San Salvador / Centro Histórico |
 | Plataforma | Web responsiva / PWA; Capacitor como opción para el piloto |
-| Backend y admin | Laravel 12 + Filament 4 + PostgreSQL/PostGIS |
+| Backend y admin | Laravel 13 + Filament 5 + PostgreSQL/PostGIS |
 | Frontend | Vue 3 + Vite + TypeScript + Pinia; motor 3D en Three.js puro, desacoplado de Vue |
 | Repositorio | Monorepo separado por carpetas |
 | Mapa | Diorama estilizado generado desde datos reales (OSM + DEM) |
@@ -42,7 +42,7 @@ Restricciones: un solo desarrollador asistido por Claude, sin fecha fija; la cal
 
 ```
 turismo-sv/
-├── backend/          Laravel 12 + Filament 4 + PostGIS
+├── backend/          Laravel 13 + Filament 5 + PostGIS
 │   ├── app/Domain/   Places, Categories, Promotions, Models3D, Zones
 │   ├── app/Filament/ Panel de administración
 │   └── routes/api.php
@@ -55,11 +55,11 @@ turismo-sv/
 └── docker-compose.yml
 ```
 
-Servicios de `docker-compose.yml`: `postgres` (con PostGIS), `php` (Laravel + workers de cola), `redis` (colas y caché), `minio` (almacenamiento S3 local), `builder` (builder-service), `node` (desarrollo de frontend y pipeline).
+Servicios de `docker-compose.yml`: `postgres` (con PostGIS), `php` (Laravel + workers de cola), `redis` (colas y caché), `s3` (SeaweedFS, almacenamiento S3 local), `builder` (builder-service), `node` (desarrollo de frontend y pipeline).
 
 ### 3.2 Flujos de datos
 
-**Mapa base (estático).** `pipeline/` genera `tileset.json` y teselas `.glb`, y los publica en S3/MinIO en una carpeta versionada servida por CDN. El frontend los consume directamente con `3DTilesRendererJS`, sin pasar por Laravel. Un registro `tileset_versions` en el backend indica la versión vigente y el frontend la obtiene de `GET /api/config`.
+**Mapa base (estático).** `pipeline/` genera `tileset.json` y teselas `.glb`, y los publica en S3/SeaweedFS en una carpeta versionada servida por CDN. El frontend los consume directamente con `3DTilesRendererJS`, sin pasar por Laravel. Un registro `tileset_versions` en el backend indica la versión vigente y el frontend la obtiene de `GET /api/config`.
 
 **Contenido (dinámico).** El frontend solicita `GET /api/places?cell={z}/{x}/{y}&categories=…&locale=…` y Laravel responde con sitios publicados, promociones vigentes y la URL del `.glb` aprobado de cada sitio, resueltos con PostGIS. Las celdas son de una cuadrícula fija por nivel de zoom, cacheables en navegador y CDN con ETag.
 
@@ -187,7 +187,7 @@ Autenticación entre Laravel y builder-service mediante token compartido; el ser
 3. Validación con `kit/rules`; ante errores, se devuelven al modelo para corrección, hasta 3 reintentos.
 4. Construcción y render de thumbnails desde 3 ángulos con Three.js en Node (render headless).
 5. Autocrítica visual: Claude compara los thumbnails con las fotos de referencia y devuelve ajustes al `spec`; se repite de 1 a 2 rondas según configuración.
-6. Exportación final a `.glb` comprimido con meshopt mediante `gltf-transform`, subida a MinIO/S3 y callback a Laravel con rutas, `spec`, y `generation_log`.
+6. Exportación final a `.glb` comprimido con meshopt mediante `gltf-transform`, subida a SeaweedFS/S3 y callback a Laravel con rutas, `spec`, y `generation_log`.
 
 ### 6.3 Estudio 3D en Filament
 
@@ -298,7 +298,7 @@ Solo lectura, sin autenticación, con rate limiting y cabeceras de caché.
 
 ## 11. Pruebas
 
-- **backend**: Pest ejecutado vía `docker compose`; alcance por zona de `zone_admin`, consultas por celda, filtrado de promociones por fecha, validación de atributos, flujos borrador → aprobado de sitios, modelos y promociones.
+- **backend**: Pest ejecutado vía `docker compose` (PHP y Composer solo existen dentro de los contenedores); alcance por zona de `zone_admin`, consultas por celda, filtrado de promociones por fecha, validación de atributos, flujos borrador → aprobado de sitios, modelos y promociones.
 - **kit**: Vitest por pieza (esquema, solo roles de paleta, presupuesto de triángulos, caja delimitadora), validador de reglas y proyección `geo` ida y vuelta.
 - **builder-service**: pruebas con respuestas de Claude grabadas, sin llamadas reales en CI; set de evaluación de 8 monumentos de San Salvador revisado con checklist ante cambios de prompt o kit.
 - **pipeline**: ejecución sobre una zona fixture pequeña; validez del tileset, error geométrico decreciente por nivel y presupuesto de peso por tesela.
@@ -306,7 +306,7 @@ Solo lectura, sin autenticación, con rate limiting y cabeceras de caché.
 
 ## 12. Hitos
 
-1. **M0 Fundaciones**: monorepo, `docker-compose.yml` (PostGIS, Redis, MinIO), `kit/geo`, CI.
+1. **M0 Fundaciones**: monorepo, `docker-compose.yml` (PostGIS, Redis, SeaweedFS), `kit/geo`, CI.
 2. **M1 Mapa base**: pipeline (país en baja resolución y Gran San Salvador completo), motor con cámara, navegación y niveles de zoom.
 3. **M2 Contenido**: modelo de datos, Filament con roles y zonas, categorías dinámicas, API por celdas, capa de sitios y panel de detalle.
 4. **M3 Kit y Estudio 3D manual**: piezas, builder-service (`/build`), vista previa en Filament, exclusión de huellas en teselas, cinco monumentos modelados con el kit.
