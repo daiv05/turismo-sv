@@ -21,6 +21,8 @@ export type ErrorKind = 'network' | 'notFound' | null;
 export const useMapStore = defineStore('map', {
   state: () => ({
     locale: 'es' as Locale,
+    mode: 'map' as 'map' | 'list',
+    webglMissing: false,
     categories: [] as ConfigCategory[],
     tileset: null as AppConfig['tileset'],
     activeCategories: [] as string[],

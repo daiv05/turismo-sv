@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\ModelCallbackController;
 use App\Http\Controllers\Api\PlaceController;
+use App\Http\Controllers\Api\PlaceListController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\HealthController;
@@ -14,6 +15,7 @@ Route::get('/health', HealthController::class);
 
 Route::middleware(['throttle:public-api', CacheableJson::class.':60'])->group(function () {
     Route::get('/config', ConfigController::class);
+    Route::get('/list', PlaceListController::class);
     Route::get('/places', [PlaceController::class, 'index']);
     Route::get('/places/{slug}', [PlaceController::class, 'show']);
     Route::get('/zones/{slug}', [ZoneController::class, 'show']);

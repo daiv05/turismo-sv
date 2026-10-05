@@ -5,8 +5,10 @@ import { Engine } from '../engine/engine';
 import { t } from '../i18n';
 import { parseRoute, pathFor } from '../routes';
 import { tilesetUrl } from '../tilesetUrl';
+import { supportsWebGL } from '../webgl';
 import { getApi, useMapStore } from '../state/map';
 import CategoryChips from './CategoryChips.vue';
+import ListView from './ListView.vue';
 import PlacePanel from './PlacePanel.vue';
 import TopBar from './TopBar.vue';
 
@@ -16,12 +18,31 @@ let engine: Engine | null = null;
 let controller: ContentController | null = null;
 let selectedFromMap = false;
 
+function chooseMode(): void {
+  const wantsList = new URLSearchParams(window.location.search).get('view') === 'list';
+  if (wantsList) store.mode = 'list';
+  else if (!supportsWebGL()) {
+    store.mode = 'list';
+    store.webglMissing = true;
+  }
+}
+
+chooseMode();
+
 onMounted(async () => {
-  if (!canvas.value) return;
   await store.loadConfig();
-  if (!canvas.value) return;
+  void openRoute(parseRoute(window.location.pathname));
+  window.addEventListener('popstate', onPopState);
+  if (store.mode === 'list' || !canvas.value) return;
   const override = new URLSearchParams(window.location.search).get('tileset');
-  engine = new Engine(canvas.value, { tilesetUrl: tilesetUrl({ tileset: store.tileset }, override) });
+  try {
+    engine = new Engine(canvas.value, { tilesetUrl: tilesetUrl({ tileset: store.tileset }, override) });
+  } catch {
+    engine = null;
+    store.mode = 'list';
+    store.webglMissing = true;
+    return;
+  }
   controller = new ContentController({
     api: getApi(),
     onPlaces: (places) => engine?.setPlaces(places),
@@ -40,8 +61,6 @@ onMounted(async () => {
     else store.clearSelection();
   });
   engine.start();
-  void openRoute(parseRoute(window.location.pathname));
-  window.addEventListener('popstate', onPopState);
   if (import.meta.env.DEV) (window as unknown as { __engine: Engine }).__engine = engine;
 });
 
@@ -104,11 +123,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <canvas ref="canvas" class="viewer" />
+  <canvas v-if="store.mode === 'map'" ref="canvas" class="viewer" />
+  <ListView v-else />
   <TopBar @pick="(slug) => void store.selectPlace(slug)" />
   <CategoryChips />
   <PlacePanel @close="close" />
-  <div class="hud" data-testid="zoom-level">{{ store.zoomLevel }}</div>
+  <div v-if="store.mode === 'map'" class="hud" data-testid="zoom-level">{{ store.zoomLevel }}</div>
   <p v-if="store.error === 'network'" class="toast" role="status">{{ t('errorNetwork', store.locale) }}</p>
   <p v-else-if="store.error === 'notFound'" class="toast" role="status">{{ t('errorNotFound', store.locale) }}</p>
   <footer class="attribution">{{ t('attribution', store.locale) }}</footer>

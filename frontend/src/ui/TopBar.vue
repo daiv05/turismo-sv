@@ -13,6 +13,8 @@ watch(text, (value) => {
   timer = window.setTimeout(() => void store.runSearch(value), 250);
 });
 
+const toggleHref = computed(() => (store.mode === 'map' ? '?view=list' : window.location.pathname));
+
 const hasResults = computed(() => {
   const r = store.results;
   return !!r && r.places.length + r.categories.length + r.promotions.length > 0;
@@ -61,6 +63,7 @@ function toggleCategoryFromSearch(slug: string): void {
         </template>
       </div>
     </div>
+    <a class="toggle" :href="toggleHref" data-testid="toggle-view">{{ store.mode === 'map' ? t('viewList', store.locale) : t('viewMap', store.locale) }}</a>
     <div class="locale" role="group" :aria-label="t('language', store.locale)">
       <button :class="{ on: store.locale === 'es' }" @click="store.locale = 'es'">ES</button>
       <button :class="{ on: store.locale === 'en' }" @click="store.locale = 'en'">EN</button>
@@ -145,6 +148,16 @@ input:focus-visible {
 .empty {
   margin: 10px;
   color: var(--muted);
+}
+.toggle {
+  padding: 7px 12px;
+  border: 1px solid var(--secondary);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--accent);
+  font: 600 13px var(--font-ui);
+  text-decoration: none;
+  white-space: nowrap;
 }
 .locale {
   display: flex;

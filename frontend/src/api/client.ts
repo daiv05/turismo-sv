@@ -1,5 +1,5 @@
 import type { CellId } from '../engine/cells';
-import type { AppConfig, Locale, PlaceDetail, PlacesResponse, SearchResponse, ZoneDetail } from './types';
+import type { AppConfig, Locale, PlaceDetail, PlaceSummary, PlacesResponse, SearchResponse, ZoneDetail } from './types';
 
 export class ApiError extends Error {
   override readonly name = 'ApiError';
@@ -37,6 +37,12 @@ export class ApiClient {
     const params: Record<string, string> = { cell: `${cell.z}/${cell.x}/${cell.y}`, locale: query.locale };
     if (query.categories.length > 0) params.categories = query.categories.join(',');
     return this.get<PlacesResponse>('/api/places', params, signal);
+  }
+
+  async list(query: PlacesQuery, signal?: AbortSignal): Promise<PlaceSummary[]> {
+    const params: Record<string, string> = { locale: query.locale };
+    if (query.categories.length > 0) params.categories = query.categories.join(',');
+    return (await this.get<{ data: PlaceSummary[] }>('/api/list', params, signal)).data;
   }
 
   async place(slug: string, locale: Locale, signal?: AbortSignal): Promise<PlaceDetail> {

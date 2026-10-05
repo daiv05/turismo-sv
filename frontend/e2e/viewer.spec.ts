@@ -82,4 +82,42 @@ test.describe('viewer', () => {
       await expect(page.getByRole('status')).toContainText(/ya no está disponible/);
     }
   });
+
+  test.describe('list view', () => {
+    test('is offered as an alternative and lists the places by category', async ({ page }) => {
+      await page.goto('/?view=list');
+
+      await expect(page.getByTestId('list-view')).toBeVisible();
+      await expect(page.getByTestId('list-catedral-metropolitana')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Monumentos' })).toBeVisible();
+      await expect(page.getByTestId('zoom-level')).toHaveCount(0);
+    });
+
+    test('opens the detail panel from the list and filters by category', async ({ page }) => {
+      await page.goto('/?view=list');
+      await page.getByTestId('list-teatro-nacional').click();
+
+      await expect(page.getByTestId('place-panel').getByRole('heading', { name: 'Teatro Nacional' })).toBeVisible();
+      await page.getByTestId('chip-parks').click();
+      await expect(page.getByTestId('list-teatro-nacional')).toHaveCount(0);
+    });
+
+    test('shows up by itself, with an explanation, when the browser has no WebGL', async ({ page }) => {
+      await page.addInitScript(() => {
+        HTMLCanvasElement.prototype.getContext = () => null;
+      });
+      await page.goto('/');
+
+      await expect(page.getByTestId('list-view')).toBeVisible();
+      await expect(page.getByText(/no puede mostrar el mapa 3D/)).toBeVisible();
+      await expect(page.getByTestId('list-palacio-nacional')).toBeVisible();
+    });
+
+    test('can switch back to the map', async ({ page }) => {
+      await page.goto('/?view=list');
+      await page.getByTestId('toggle-view').click();
+
+      await expect(page.getByTestId('zoom-level')).toBeVisible();
+    });
+  });
 });
