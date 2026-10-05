@@ -1,5 +1,5 @@
-import { Document, NodeIO } from '@gltf-transform/core';
-import { EXTMeshoptCompression } from '@gltf-transform/extensions';
+import { Document, Logger, NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder } from 'meshoptimizer';
 import type { TerrainMesh } from './mesh';
@@ -19,6 +19,7 @@ export async function terrainToGlb(mesh: TerrainMesh, options: GlbOptions): Prom
     throw new RangeError('Cannot write a glb for an empty mesh');
   }
   const doc = new Document();
+  doc.setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = doc.createBuffer();
   const position = doc.createAccessor().setType('VEC3').setArray(mesh.positions).setBuffer(buffer);
   const color = doc.createAccessor().setType('VEC3').setArray(mesh.colors).setBuffer(buffer);
@@ -39,7 +40,7 @@ export async function terrainToGlb(mesh: TerrainMesh, options: GlbOptions): Prom
     await MeshoptEncoder.ready;
     doc.createExtension(EXTMeshoptCompression).setRequired(true);
     await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
-    io.registerExtensions([EXTMeshoptCompression]).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
+    io.registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
   }
   return io.writeBinary(doc);
 }

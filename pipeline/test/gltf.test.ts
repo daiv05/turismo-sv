@@ -34,6 +34,13 @@ describe('terrainToGlb', () => {
     expect(packed.byteLength).toBeLessThan(plain.byteLength);
   });
 
+  it('declares every extension needed to decode compressed output', async () => {
+    const doc = await read(await terrainToGlb(mesh, { compress: true }));
+    const names = doc.getRoot().listExtensionsUsed().map((e) => e.extensionName);
+    expect(names).toContain('EXT_meshopt_compression');
+    expect(names).toContain('KHR_mesh_quantization');
+  });
+
   it('rejects an empty mesh', async () => {
     await expect(terrainToGlb({ positions: new Float32Array(), colors: new Float32Array(), indices: new Uint32Array() }, { compress: false })).rejects.toThrow(RangeError);
   });
