@@ -1,0 +1,82 @@
+name: turismo-sv
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_DB: turismo
+      POSTGRES_USER: turismo
+      POSTGRES_PASSWORD: turismo
+    ports:
+      - "54320:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/20-test-database.sql:/docker-entrypoint-initdb.d/20-test-database.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U turismo -d turismo"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:8.8-alpine
+    ports:
+      - "63790:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command: server -dir=/data -ip.bind=0.0.0.0 -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "8333:8333"
+    volumes:
+      - s3-data:/data
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9333/cluster/status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  s3-init:
+    image: amazon/aws-cli:2.37.9
+    profiles: ["init"]
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: turismo
+      AWS_SECRET_ACCESS_KEY: turismo-secret
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["sh", "-c"]
+    command:
+      - aws --endpoint-url http://s3:8333 s3api head-bucket --bucket turismo || aws --endpoint-url http://s3:8333 s3 mb s3://turismo
+
+  php:
+    build: docker/php
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/repo
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/api/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 300s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  s3-data:

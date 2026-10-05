@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "turismo",
+      "credentials": [
+        {
+          "accessKey": "turismo",
+          "secretKey": "turismo-secret"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
