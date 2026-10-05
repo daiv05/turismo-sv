@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ContentController } from '../engine/contentController';
 import { Engine } from '../engine/engine';
 import { t } from '../i18n';
+import { parseRoute, pathFor } from '../routes';
 import { getApi, useMapStore } from '../state/map';
 import CategoryChips from './CategoryChips.vue';
 import PlacePanel from './PlacePanel.vue';
@@ -37,6 +38,8 @@ onMounted(() => {
   });
   engine.start();
   void store.loadConfig();
+  void openRoute(parseRoute(window.location.pathname));
+  window.addEventListener('popstate', onPopState);
   if (import.meta.env.DEV) (window as unknown as { __engine: Engine }).__engine = engine;
 });
 
@@ -59,14 +62,43 @@ watch(
   (slug) => {
     engine?.select(slug, { fly: !selectedFromMap });
     selectedFromMap = false;
+    syncUrl(slug);
   },
 );
+
+async function openRoute(route: ReturnType<typeof parseRoute>): Promise<void> {
+  if (route.kind === 'place') {
+    await store.selectPlace(route.slug);
+    if (store.detail) engine?.flyToLonLat(store.detail.lon, store.detail.lat, 900);
+  } else if (route.kind === 'zone') {
+    try {
+      const zone = await getApi().zone(route.slug);
+      if (zone.camera) engine?.flyToLonLat(zone.camera.lon, zone.camera.lat, zone.camera.distance);
+    } catch {
+      store.error = 'notFound';
+    }
+  } else {
+    store.clearSelection();
+  }
+}
+
+function onPopState(): void {
+  void openRoute(parseRoute(window.location.pathname));
+}
+
+function syncUrl(slug: string | null): void {
+  const target = pathFor(slug ? { kind: 'place', slug } : { kind: 'home' });
+  if (window.location.pathname !== target) window.history.pushState(null, '', target);
+}
 
 function close(): void {
   store.clearSelection();
 }
 
-onBeforeUnmount(() => engine?.dispose());
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', onPopState);
+  engine?.dispose();
+});
 </script>
 
 <template>

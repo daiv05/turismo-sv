@@ -53,4 +53,29 @@ test.describe('viewer', () => {
     await expect(page.getByRole('status')).toContainText(/No pudimos conectar/);
     await expect(page.getByTestId('zoom-level')).toBeVisible();
   });
+
+  test('opens a place directly from its deep link', async ({ page }) => {
+    await page.goto('/lugar/palacio-nacional');
+
+    await expect(page.getByTestId('place-panel').getByRole('heading', { name: 'Palacio Nacional' })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/lugar/palacio-nacional');
+  });
+
+  test('keeps the address in sync with the selection and the back button', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('search').fill('teatro');
+    await page.getByTestId('search-results').getByRole('option', { name: 'Teatro Nacional' }).click();
+    await expect(page.getByTestId('place-panel')).toBeVisible();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/lugar/teatro-nacional');
+
+    await page.goBack();
+    await expect(page.getByTestId('place-panel')).toBeHidden();
+    expect(new URL(page.url()).pathname).toBe('/');
+  });
+
+  test('shows a message for a deep link to a place that does not exist', async ({ page }) => {
+    await page.goto('/lugar/no-existe');
+
+    await expect(page.getByRole('status')).toContainText(/ya no está disponible/);
+  });
 });
