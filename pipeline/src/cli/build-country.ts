@@ -6,6 +6,8 @@ import { buildTileTree } from '../build';
 import { affectedTiles } from '../buildings';
 import { buildQuadtree } from '../quadtree';
 import { loadBuildings, loadExclusions } from './osm-fixture';
+import { parseOverpass } from '../osm';
+import type { Road } from '../roads';
 import { bboxOfRings, maskAt, rasterizeMask, type MultiPolygon } from '../geometry';
 import { DATA_DIR, DEM_TILES, OUT_DIR } from './paths';
 
@@ -84,7 +86,9 @@ async function main(): Promise<void> {
     return maskAt(mask, lon, lat) && demHeight(dem, lon, lat) > 0.5;
   };
 
-  const buildings = process.env.BUILDINGS_FILE ? await loadBuildings(process.env.BUILDINGS_FILE) : [];
+  const osm = process.env.OSM_FILE ? parseOverpass(JSON.parse(await readFile(process.env.OSM_FILE, 'utf8'))) : { buildings: [], roads: [] as Road[] };
+  const buildings = process.env.BUILDINGS_FILE ? await loadBuildings(process.env.BUILDINGS_FILE) : osm.buildings;
+  const roads = osm.roads;
   const exclusions = process.env.EXCLUSIONS_FILE ? await loadExclusions(process.env.EXCLUSIONS_FILE) : [];
   if (exclusions.length > 0) {
     const changed = affectedTiles(buildQuadtree(bounds, LEVELS, SAMPLES), exclusions);
@@ -103,6 +107,7 @@ async function main(): Promise<void> {
     compress: true,
     heightScale: HEIGHT_SCALE,
     exclusions,
+    ...(roads.length > 0 ? { roads: (area) => roads.filter((r) => buildingInArea({ ring: r.line }, area)), roadsFromLevel: Number(process.env.ROADS_FROM_LEVEL ?? LEVELS - 2) } : {}),
     ...(buildings.length > 0 ? { buildings: (area) => buildings.filter((b) => buildingInArea(b, area)), buildingsFromLevel: Number(process.env.BUILDINGS_FROM_LEVEL ?? LEVELS - 2) } : {}),
     write: async (path, data) => {
       const file = `${target}${path}`;

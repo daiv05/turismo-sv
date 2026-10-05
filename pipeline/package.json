@@ -7,6 +7,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "fetch:dem": "tsx src/cli/fetch-dem.ts",
+    "fetch:osm": "tsx src/cli/fetch-osm.ts",
     "build:country": "tsx src/cli/build-country.ts",
     "publish:tiles": "tsx src/cli/publish.ts"
   },

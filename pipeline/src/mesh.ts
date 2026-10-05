@@ -92,3 +92,26 @@ export function buildTerrainMesh(grid: HeightGrid, options: MeshOptions): Terrai
 
   return { positions: new Float32Array(positions), colors: new Float32Array(colors), indices: new Uint32Array(indices) };
 }
+
+/**
+ * Appends meshes to a base mesh, shifting indices so every part keeps its own vertices.
+ */
+export function concatMeshes(base: TerrainMesh, extras: readonly TerrainMesh[]): TerrainMesh {
+  const parts = [base, ...extras.filter((m) => m.indices.length > 0)];
+  if (parts.length === 1) return base;
+  const positions = new Float32Array(parts.reduce((n, m) => n + m.positions.length, 0));
+  const colors = new Float32Array(positions.length);
+  const indices = new Uint32Array(parts.reduce((n, m) => n + m.indices.length, 0));
+  let vertexOffset = 0;
+  let floatOffset = 0;
+  let indexOffset = 0;
+  for (const part of parts) {
+    positions.set(part.positions, floatOffset);
+    colors.set(part.colors, floatOffset);
+    indices.set(part.indices.map((i) => i + vertexOffset), indexOffset);
+    vertexOffset += part.positions.length / 3;
+    floatOffset += part.positions.length;
+    indexOffset += part.indices.length;
+  }
+  return { positions, colors, indices };
+}

@@ -41,6 +41,15 @@ S3_ENDPOINT=http://localhost:8333 TILESET_VERSION=v1 pnpm --filter @turismo/pipe
 docker compose exec php php artisan tilesets:register v1 http://localhost:8333/turismo/tiles/v1/
 ```
 
+### Calles y edificios (OSM)
+
+```bash
+pnpm --filter @turismo/pipeline fetch:osm centro-historico
+OSM_FILE=pipeline/data/osm-centro-historico.json TILESET_VERSION=v2 pnpm --filter @turismo/pipeline build:country
+```
+
+El extracto se descarga de Overpass; el pipeline lo convierte en calles (cintas sobre el terreno) y edificios genéricos extruidos, con las huellas de los sitios con modelo excluidas (`EXCLUSIONS_FILE`, generado con `php artisan tilesets:exclusions`).
+
 ### Modelos de referencia
 
 ```bash
@@ -91,7 +100,7 @@ Implementado y verificado con pruebas automáticas y en navegador:
 
 Pendiente o no verificado:
 
-- Calles, edificios genéricos, vegetación y límites administrativos desde OSM: el pipeline solo usa el DEM y un contorno provisional del país porque el acceso a Geofabrik estaba bloqueado en el entorno de desarrollo. El detalle completo del Gran San Salvador depende de esos datos.
+- Datos reales de OSM: el lector de Overpass, las calles y los edificios están implementados y se probaron con un extracto de ejemplo en ese formato, pero la descarga estaba bloqueada en el entorno de desarrollo (403). Faltan además la vegetación por uso de suelo y los límites administrativos, que siguen usando un contorno provisional del país.
 - El agente contra la API real de Claude: se probó con respuestas grabadas y el ciclo completo entre servicios con un modelo de lenguaje simulado, sin llamadas reales.
 - La configuración de Docker (servicios `builder`, `queue`, `scheduler`, lectura anónima y CORS de SeaweedFS) está escrita pero no se pudo ejecutar en el entorno de desarrollo, que no tenía Docker; el resto se probó contra Postgres, Redis y un S3 compatible locales.
 - Rendimiento en un Android de gama media y los ajustes visuales finos.

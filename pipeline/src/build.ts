@@ -2,7 +2,8 @@ import { SKIRT_COLOR, terrainColor } from './color';
 import { extrudeBuildings, type Building, type Exclusion } from './buildings';
 import { createGrid, heightAtGrid, type SceneRect } from './heightfield';
 import { terrainToGlb } from './gltf';
-import { buildTerrainMesh, type TerrainMesh } from './mesh';
+import { buildTerrainMesh, concatMeshes, type TerrainMesh } from './mesh';
+import { extrudeRoads, type Road } from './roads';
 import { buildQuadtree, tileKey, type TileNode } from './quadtree';
 import { terraceStep, quantizeGrid } from './terraces';
 import { buildTileset, type Tileset } from './tileset';
@@ -19,6 +20,8 @@ export interface BuildOptions {
   buildings?: (area: SceneRect) => readonly Building[];
   buildingsFromLevel?: number;
   exclusions?: readonly Exclusion[];
+  roads?: (area: SceneRect) => readonly Road[];
+  roadsFromLevel?: number;
   write: (path: string, data: Uint8Array | string) => Promise<void>;
 }
 
@@ -43,25 +46,18 @@ export async function buildTileTree(options: BuildOptions): Promise<BuildResult>
   const info = new Map<string, TileInfo>();
   let tileCount = 0;
 
-  const withBuildings = (mesh: TerrainMesh, node: TileNode, grid: ReturnType<typeof createGrid>): TerrainMesh => {
-    if (!options.buildings || mesh.indices.length === 0 || node.level < (options.buildingsFromLevel ?? options.levels - 2)) return mesh;
+  const withDetail = (mesh: TerrainMesh, node: TileNode, grid: ReturnType<typeof createGrid>): TerrainMesh => {
+    if (mesh.indices.length === 0) return mesh;
     const scale = options.heightScale ?? 1;
-    const extra = extrudeBuildings(options.buildings(node.bounds), {
-      exclusions: options.exclusions ?? [],
-      heightAt: (x, z) => heightAtGrid(grid, x, z) * scale,
-    });
-    if (extra.indices.length === 0) return mesh;
-    const offset = mesh.positions.length / 3;
-    const positions = new Float32Array(mesh.positions.length + extra.positions.length);
-    positions.set(mesh.positions);
-    positions.set(extra.positions, mesh.positions.length);
-    const colors = new Float32Array(mesh.colors.length + extra.colors.length);
-    colors.set(mesh.colors);
-    colors.set(extra.colors, mesh.colors.length);
-    const indices = new Uint32Array(mesh.indices.length + extra.indices.length);
-    indices.set(mesh.indices);
-    indices.set(extra.indices.map((i) => i + offset), mesh.indices.length);
-    return { positions, colors, indices };
+    const heightAt = (x: number, z: number): number => heightAtGrid(grid, x, z) * scale;
+    const extras: TerrainMesh[] = [];
+    if (options.buildings && node.level >= (options.buildingsFromLevel ?? options.levels - 2)) {
+      extras.push(extrudeBuildings(options.buildings(node.bounds), { exclusions: options.exclusions ?? [], heightAt }));
+    }
+    if (options.roads && node.level >= (options.roadsFromLevel ?? options.levels - 2)) {
+      extras.push(extrudeRoads(options.roads(node.bounds), { heightAt }));
+    }
+    return concatMeshes(mesh, extras);
   };
 
   const visit = async (node: TileNode): Promise<TileNode | null> => {
@@ -78,7 +74,7 @@ export async function buildTileTree(options: BuildOptions): Promise<BuildResult>
       heightScale: options.heightScale ?? 1,
     });
 
-    const merged = withBuildings(mesh, node, grid);
+    const merged = withDetail(mesh, node, grid);
 
     const children: TileNode[] = [];
     for (const child of node.children) {

@@ -123,3 +123,28 @@ describe('buildings and exclusions in tiles', () => {
     expect(excluded.all).toBeGreaterThan(none.all);
   });
 });
+
+describe('roads in tiles', () => {
+  const base = { bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 }, levels: 3, samples: 9, heightAt: () => 50, isLand: () => true, compress: false };
+  const roads = [{ id: 'r', kind: 'primary', line: [[-88.905, 13.75], [-88.895, 13.75]] as Array<[number, number]> }];
+
+  async function total(extra: object): Promise<number> {
+    const files = new Map<string, Uint8Array | string>();
+    await buildTileTree({ ...base, ...extra, write: async (path: string, data: Uint8Array | string) => void files.set(path, data) } as never);
+    return [...files.entries()].filter(([k]) => k.endsWith('.glb')).reduce((n, [, v]) => n + (v as Uint8Array).byteLength, 0);
+  }
+
+  it('adds roads from the configured level on and only there', async () => {
+    const none = await total({});
+
+    expect(await total({ roads: () => roads, roadsFromLevel: 2 })).toBeGreaterThan(none);
+    expect(await total({ roads: () => roads, roadsFromLevel: 3 })).toBe(none);
+  });
+
+  it('combines roads and buildings in the same tile', async () => {
+    const onlyRoads = await total({ roads: () => roads, roadsFromLevel: 2 });
+    const ring: Array<[number, number]> = [[-88.9, 13.75], [-88.8998, 13.75], [-88.8998, 13.7502], [-88.9, 13.7502], [-88.9, 13.75]];
+
+    expect(await total({ roads: () => roads, roadsFromLevel: 2, buildings: () => [{ id: 'b', ring }], buildingsFromLevel: 2 })).toBeGreaterThan(onlyRoads);
+  });
+});
