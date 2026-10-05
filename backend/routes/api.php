@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
 
-Route::middleware(['throttle:120,1', CacheableJson::class.':60'])->group(function () {
+Route::middleware(['throttle:public-api', CacheableJson::class.':60'])->group(function () {
     Route::get('/config', ConfigController::class);
     Route::get('/places', [PlaceController::class, 'index']);
     Route::get('/places/{slug}', [PlaceController::class, 'show']);

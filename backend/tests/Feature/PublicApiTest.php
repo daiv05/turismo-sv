@@ -99,3 +99,26 @@ it('rejects empty or too short queries', function () {
     $this->getJson('/api/search')->assertStatus(422);
     $this->getJson('/api/search?q=a')->assertStatus(422);
 });
+
+it('rate limits public endpoints per client and tells them when to retry', function () {
+    config(['api.rate_limit' => 3]);
+
+    foreach (range(1, 3) as $i) {
+        $this->getJson('/api/config')->assertOk();
+    }
+
+    $this->getJson('/api/config')->assertStatus(429)->assertHeader('Retry-After');
+});
+
+it('allows a normal browsing session well under the default limit', function () {
+    foreach (range(1, 40) as $i) {
+        $this->getJson('/api/places?cell=2/-4/0')->assertOk();
+    }
+});
+
+it('does not rate limit the health endpoint with the public limiter', function () {
+    config(['api.rate_limit' => 1]);
+    $this->getJson('/api/config')->assertOk();
+
+    expect($this->getJson('/api/health')->status())->not->toBe(429);
+});
