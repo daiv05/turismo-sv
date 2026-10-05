@@ -32,6 +32,7 @@ import {
 } from './camera';
 import { tileBudget } from './budget';
 import { TypedEmitter } from './emitter';
+import { ModelsLayer } from './modelsLayer';
 import { SitesLayer } from './sitesLayer';
 import { TerrainTiles } from './tiles';
 import { nextPixelRatio } from './quality';
@@ -43,6 +44,7 @@ export interface EngineEvents {
   tilesError: { error: unknown };
   viewChanged: { bounds: GroundBounds; level: ZoomLevel; distance: number };
   placeSelected: { slug: string | null };
+  modelError: { slug: string; error: unknown };
 }
 
 export interface EngineOptions {
@@ -69,6 +71,7 @@ export class Engine {
   private readonly cleanups: Array<() => void> = [];
   private terrain: TerrainTiles | null = null;
   private readonly sites = new SitesLayer();
+  private readonly models = new ModelsLayer({ onError: (slug, error) => this.events.emit('modelError', { slug, error }) });
   private flight: { from: CameraState; to: CameraState; started: number; duration: number } | null = null;
   private lastViewKey = '';
   private viewTimer = 0;
@@ -88,7 +91,7 @@ export class Engine {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.scene.background = new Color(PALETTE.ground);
     this.buildScene(options.tilesetUrl === undefined);
-    this.scene.add(this.sites.group);
+    this.scene.add(this.sites.group, this.models.group);
     if (options.tilesetUrl !== undefined) this.loadTerrain(options.tilesetUrl);
     this.bindInput();
     this.resize();
@@ -108,6 +111,7 @@ export class Engine {
     clearTimeout(this.viewTimer);
     this.terrain?.dispose();
     this.sites.dispose();
+    this.models.dispose();
     this.renderer.dispose();
   }
 
@@ -285,6 +289,8 @@ export class Engine {
     this.camera.updateMatrixWorld();
     this.terrain?.update();
     this.sites.update(this.state.distance, this.terrain?.group ?? null, this.terrain?.version ?? 0);
+    this.models.update(this.sites.siteList(), this.state.target, this.state.distance);
+    this.sites.setHidden(this.models.shownSlugs());
     this.renderer.render(this.scene, this.camera);
     this.scheduleViewChange();
 

@@ -62,6 +62,8 @@ export class SitesLayer {
   private heads: InstancedMesh | null = null;
   private readonly bubbles = new Group();
   private selected: string | null = null;
+  private hidden: ReadonlySet<string> = new Set();
+  private siteListCache: Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null }> | null = null;
   private heightsVersion = -1;
   private scaleApplied = -1;
   private readonly ray = new Raycaster();
@@ -85,6 +87,7 @@ export class SitesLayer {
       }
     }
     this.plotted.sort((a, b) => b.priority - a.priority);
+    this.siteListCache = null;
     this.heightsVersion = -1;
     this.rebuild();
   }
@@ -92,6 +95,23 @@ export class SitesLayer {
   setSelected(slug: string | null): void {
     this.selected = slug;
     this.scaleApplied = -1;
+  }
+
+  /**
+   * Sites with their scene position, terrain height and model URL, for the models layer.
+   */
+  siteList(): Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null }> {
+    this.siteListCache ??= this.plotted.map((p) => ({ slug: p.slug, x: p.x, y: p.y, z: p.z, hasModel: p.place.model !== null, url: p.place.model?.glb_url ?? null }));
+    return this.siteListCache;
+  }
+
+  /**
+   * Hides the pins of sites that are drawn as a 3D model instead.
+   */
+  setHidden(slugs: ReadonlySet<string>): void {
+    if (slugs.size === this.hidden.size && [...slugs].every((s) => this.hidden.has(s))) return;
+    this.hidden = new Set(slugs);
+    this.rebuild();
   }
 
   positionOf(slug: string): { x: number; y: number; z: number } | null {
@@ -116,6 +136,7 @@ export class SitesLayer {
     if (terrain && terrainVersion !== this.heightsVersion) {
       this.heightsVersion = terrainVersion;
       this.snapToTerrain(terrain);
+      this.siteListCache = null;
       this.rebuild();
     }
     const scale = Math.min(Math.max(distance * 0.012, 8), 1_500);
@@ -148,7 +169,7 @@ export class SitesLayer {
   }
 
   private visible(): Plotted[] {
-    return this.plotted.slice(0, MAX_PINS);
+    return this.plotted.filter((p) => !this.hidden.has(p.slug)).slice(0, MAX_PINS);
   }
 
   private snapToTerrain(terrain: Object3D): void {

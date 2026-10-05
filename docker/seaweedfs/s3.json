@@ -8,7 +8,19 @@
           "secretKey": "turismo-secret"
         }
       ],
-      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+      "actions": [
+        "Admin",
+        "Read",
+        "Write",
+        "List",
+        "Tagging"
+      ]
+    },
+    {
+      "name": "anonymous",
+      "actions": [
+        "Read"
+      ]
     }
   ]
 }
