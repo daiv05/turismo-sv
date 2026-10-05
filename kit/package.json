@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./palette": "./src/palette.ts"
+    "./palette": "./src/palette.ts",
+    "./geo": "./src/geo.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -13,5 +14,8 @@
   "devDependencies": {
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "proj4": "^2.22.0"
   }
 }
