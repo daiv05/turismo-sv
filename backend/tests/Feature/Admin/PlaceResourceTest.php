@@ -185,3 +185,17 @@ it('forbids opening a place outside the zone', function () {
 
     $this->actingAs($this->zoneAdmin)->get("/admin/places/{$outside->getKey()}/edit")->assertNotFound();
 });
+
+it('shows schema violations of the attributes as form errors instead of failing', function () {
+    $category = Category::factory()->create(['attributes_schema' => [
+        'type' => 'object',
+        'properties' => ['fee' => ['type' => 'number', 'multipleOf' => 5]],
+        'additionalProperties' => false,
+    ]]);
+    $place = Place::factory()->at(-89.19, 13.70)->create(['category_id' => $category->id, 'attributes' => ['fee' => 5]]);
+
+    Livewire::actingAs($this->zoneAdmin)->test(EditPlace::class, ['record' => $place->getKey()])
+        ->fillForm(['attributes.fee' => 7])
+        ->call('save')
+        ->assertHasFormErrors(['attributes']);
+});

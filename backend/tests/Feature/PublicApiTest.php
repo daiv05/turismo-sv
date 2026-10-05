@@ -67,11 +67,11 @@ it('searches places, categories and active promotions by name', function () {
     Category::factory()->create(['name' => ['es' => 'Catedrales', 'en' => 'Cathedrals'], 'slug' => 'catedrales']);
     Promotion::create([
         'place_id' => $place->id, 'title' => ['es' => 'Visita guiada catedral'], 'starts_at' => now()->subDay(),
-        'ends_at' => now()->addDay(), 'status' => PlaceStatus::Published,
+        'ends_at' => now()->addDay(), 'status' => PlaceStatus::Published, 'sprite_type' => 'template', 'template_key' => 'new',
     ]);
     Promotion::create([
         'place_id' => $place->id, 'title' => ['es' => 'Catedral vencida'], 'starts_at' => now()->subDays(3),
-        'ends_at' => now()->subDay(), 'status' => PlaceStatus::Published,
+        'ends_at' => now()->subDay(), 'status' => PlaceStatus::Published, 'sprite_type' => 'template', 'template_key' => 'new',
     ]);
 
     $json = $this->getJson('/api/search?q=catedral&locale=es')->assertOk()->json();

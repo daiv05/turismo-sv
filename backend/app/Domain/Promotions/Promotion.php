@@ -4,6 +4,7 @@ namespace App\Domain\Promotions;
 
 use App\Domain\Places\Place;
 use App\Domain\Places\PlaceStatus;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,11 @@ class Promotion extends Model
 
     protected $guarded = [];
 
+    protected static function booted(): void
+    {
+        static::saving(fn (self $promotion) => (new PromotionValidator())->validate($promotion));
+    }
+
     protected function casts(): array
     {
         return [
@@ -31,6 +37,18 @@ class Promotion extends Model
     public function place(): BelongsTo
     {
         return $this->belongsTo(Place::class);
+    }
+
+    /**
+     * Restricts promotions to those of places the user can reach. Super admins see everything.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->hasRole('super_admin')) {
+            return $query;
+        }
+
+        return $query->whereIn('promotions.place_id', Place::query()->visibleTo($user)->select('places.id'));
     }
 
     /**

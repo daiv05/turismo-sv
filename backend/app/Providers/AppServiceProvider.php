@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Domain\Places\Place;
+use App\Domain\Promotions\Promotion;
 use App\Policies\PlacePolicy;
+use App\Policies\PromotionPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Translatable::fallback(fallbackLocale: 'es');
         Gate::policy(Place::class, PlacePolicy::class);
+        Gate::policy(Promotion::class, PromotionPolicy::class);
         RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(config('api.rate_limit'))->by($request->ip()));
     }
 }

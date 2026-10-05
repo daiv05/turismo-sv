@@ -43,8 +43,16 @@ class PlaceResource extends JsonResource
                 'title' => $p->title,
                 'body' => $p->body,
                 'ends_at' => $p->ends_at->toIso8601String(),
-                'sprite_type' => $p->sprite_type,
-                'template_key' => $p->template_key,
+                'sprite' => [
+                    'type' => $p->sprite_type,
+                    'url' => $p->sprite_path ? Storage::disk(config('filesystems.default'))->url($p->sprite_path) : null,
+                    'frames' => $p->sprite_frames,
+                    'cols' => $p->sprite_cols,
+                    'rows' => $p->sprite_rows,
+                    'fps' => $p->sprite_fps,
+                    'template_key' => $p->template_key,
+                    'template_data' => $p->template_data,
+                ],
             ])->values(),
         ];
 

@@ -1,44 +1,45 @@
 <?php
 
-namespace App\Filament\Resources\Places\Pages;
+namespace App\Filament\Resources\Promotions\Pages;
 
 use App\Domain\Places\PlaceStatus;
-use App\Domain\Places\PlaceWorkflow;
-use App\Filament\Resources\Places\PlaceResource;
+use App\Domain\Promotions\PromotionWorkflow;
+use App\Filament\Resources\Promotions\PromotionResource;
+use App\Filament\Support\MapsDomainValidation;
 use App\Filament\Support\TranslatableForm;
-use App\Support\Spatial;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
-use App\Filament\Support\MapsDomainValidation;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
-class EditPlace extends EditRecord
+class EditPromotion extends EditRecord
 {
     use MapsDomainValidation;
 
-    protected static string $resource = PlaceResource::class;
+    protected static string $resource = PromotionResource::class;
 
     protected function getHeaderActions(): array
     {
+        $isReviewable = fn () => $this->record->status === PlaceStatus::InReview && auth()->user()->can('publish', $this->record);
+
         return [
             Action::make('submitForReview')
                 ->label('Submit for review')
                 ->visible(fn () => $this->record->status === PlaceStatus::Draft)
-                ->action(fn () => $this->applyWorkflowChange(fn (PlaceWorkflow $w) => $w->submitForReview($this->record, auth()->user()), 'Submitted for review')),
+                ->action(fn () => $this->change(fn (PromotionWorkflow $w) => $w->submitForReview($this->record, auth()->user()), 'Submitted for review')),
             Action::make('approve')
                 ->label('Approve and publish')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn () => $this->record->status === PlaceStatus::InReview && auth()->user()->can('publish', $this->record))
-                ->action(fn () => $this->applyWorkflowChange(fn (PlaceWorkflow $w) => $w->approve($this->record, auth()->user()), 'Published')),
+                ->visible($isReviewable)
+                ->action(fn () => $this->change(fn (PromotionWorkflow $w) => $w->approve($this->record, auth()->user()), 'Published')),
             Action::make('reject')
                 ->label('Send back to draft')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn () => $this->record->status === PlaceStatus::InReview && auth()->user()->can('publish', $this->record))
-                ->action(fn () => $this->applyWorkflowChange(fn (PlaceWorkflow $w) => $w->reject($this->record, auth()->user()), 'Sent back to draft')),
+                ->visible($isReviewable)
+                ->action(fn () => $this->change(fn (PromotionWorkflow $w) => $w->reject($this->record, auth()->user()), 'Sent back to draft')),
             DeleteAction::make(),
         ];
     }
@@ -49,7 +50,10 @@ class EditPlace extends EditRecord
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        return TranslatableForm::fill($data, $this->record, ['name', 'summary', 'description']);
+        $data = TranslatableForm::fill($data, $this->record, ['title', 'body']);
+        $data['sprite_image'] = $this->record->sprite_path;
+
+        return $data;
     }
 
     /**
@@ -58,10 +62,9 @@ class EditPlace extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $data['location'] = Spatial::point((float) $data['lon'], (float) $data['lat']);
-        unset($data['lon'], $data['lat'], $data['status']);
+        unset($data['status']);
 
-        return $data;
+        return PromotionResource::normalize($data);
     }
 
     /** @param  array<string, mixed>  $data */
@@ -72,13 +75,13 @@ class EditPlace extends EditRecord
 
     protected function afterSave(): void
     {
-        app(PlaceWorkflow::class)->recordEditBy($this->record, auth()->user());
+        app(PromotionWorkflow::class)->recordEditBy($this->record, auth()->user());
         $this->refreshFormData(['status']);
     }
 
-    private function applyWorkflowChange(callable $change, string $message): void
+    private function change(callable $change, string $message): void
     {
-        $change(app(PlaceWorkflow::class));
+        $change(app(PromotionWorkflow::class));
         $this->record->refresh();
         $this->refreshFormData(['status']);
         Notification::make()->title($message)->success()->send();

@@ -4,6 +4,7 @@ use App\Domain\Categories\Category;
 use App\Domain\Places\Place;
 use App\Domain\Places\PlaceStatus;
 use App\Domain\Promotions\Promotion;
+use Illuminate\Support\Facades\Storage;
 
 /*
  * Scene origin is lon -88.9 lat 13.75, x east and z south. San Salvador's cathedral (-89.191, 13.699)
@@ -20,6 +21,8 @@ function promotion(Place $place, array $overrides = []): Promotion
         'starts_at' => now()->subDay(),
         'ends_at' => now()->addDay(),
         'status' => PlaceStatus::Published,
+        'sprite_type' => 'template',
+        'template_key' => 'new',
     ], $overrides));
 }
 
@@ -115,4 +118,18 @@ it('keeps the cell grid in sync with the frontend engine', function () {
     $frontend = array_map(fn ($v) => (int) str_replace('_', '', $v), array_slice($m, 1));
 
     expect($frontend)->toBe(config('cells.sizes'));
+});
+
+it('describes how to draw each promotion sprite', function () {
+    config(['filesystems.default' => 's3']);
+    Storage::fake('s3');
+    $place = Place::factory()->at(-89.191, 13.699)->create();
+    promotion($place, ['sprite_type' => 'spritesheet', 'sprite_path' => 'sprites/fire.png', 'sprite_frames' => 6, 'sprite_cols' => 3, 'sprite_rows' => 2, 'sprite_fps' => 10, 'template_key' => null]);
+    promotion($place, ['sprite_type' => 'template', 'template_key' => 'percent-off', 'template_data' => ['value' => 20], 'priority' => -1]);
+
+    $promos = $this->getJson('/api/places?cell='.CATEDRAL_CELL)->json('data.0.promotions');
+
+    expect($promos[0]['sprite'])->toMatchArray(['type' => 'spritesheet', 'frames' => 6, 'cols' => 3, 'rows' => 2, 'fps' => 10])
+        ->and($promos[0]['sprite']['url'])->toContain('sprites/fire.png')
+        ->and($promos[1]['sprite'])->toMatchArray(['type' => 'template', 'template_key' => 'percent-off', 'template_data' => ['value' => 20], 'url' => null]);
 });

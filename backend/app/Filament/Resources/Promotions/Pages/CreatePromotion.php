@@ -1,32 +1,27 @@
 <?php
 
-namespace App\Filament\Resources\Places\Pages;
+namespace App\Filament\Resources\Promotions\Pages;
 
 use App\Domain\Places\PlaceStatus;
-use App\Filament\Resources\Places\PlaceResource;
-use App\Support\Spatial;
+use App\Filament\Resources\Promotions\PromotionResource;
 use App\Filament\Support\MapsDomainValidation;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
-class CreatePlace extends CreateRecord
+class CreatePromotion extends CreateRecord
 {
     use MapsDomainValidation;
 
-    protected static string $resource = PlaceResource::class;
+    protected static string $resource = PromotionResource::class;
 
     /**
-     * New places always start as drafts owned by the creator, whatever the request carries.
-     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['location'] = Spatial::point((float) $data['lon'], (float) $data['lat']);
-        unset($data['lon'], $data['lat'], $data['status']);
+        $data = PromotionResource::normalize($data);
         $data['status'] = PlaceStatus::Draft;
-        $data['created_by'] = auth()->id();
 
         return $data;
     }
