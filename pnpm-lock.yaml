@@ -8,6 +8,19 @@ importers:
 
   .: {}
 
+  frontend:
+    dependencies:
+      '@turismo/kit':
+        specifier: workspace:*
+        version: link:../kit
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(vite@8.3.2)
+
   kit:
     dependencies:
       proj4:
