@@ -13,7 +13,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { lonLatToScene } from '@turismo/kit/geo';
-import type { PlaceSummary } from '../api/types';
+import type { Locale, PlaceSummary } from '../api/types';
 import { PALETTE } from '@turismo/kit/palette';
 import {
   CAMERA_FOV_DEGREES,
@@ -33,6 +33,7 @@ import {
 import { tileBudget } from './budget';
 import { TypedEmitter } from './emitter';
 import { ModelsLayer } from './modelsLayer';
+import { PromoLayer } from './promoLayer';
 import { SitesLayer } from './sitesLayer';
 import { TerrainTiles } from './tiles';
 import { nextPixelRatio } from './quality';
@@ -71,6 +72,8 @@ export class Engine {
   private readonly cleanups: Array<() => void> = [];
   private terrain: TerrainTiles | null = null;
   private readonly sites = new SitesLayer();
+  private readonly promos = new PromoLayer();
+  private locale: Locale = 'es';
   private readonly models = new ModelsLayer({ onError: (slug, error) => this.events.emit('modelError', { slug, error }) });
   private flight: { from: CameraState; to: CameraState; started: number; duration: number } | null = null;
   private lastViewKey = '';
@@ -91,7 +94,7 @@ export class Engine {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.scene.background = new Color(PALETTE.ground);
     this.buildScene(options.tilesetUrl === undefined);
-    this.scene.add(this.sites.group, this.models.group);
+    this.scene.add(this.sites.group, this.models.group, this.promos.group);
     if (options.tilesetUrl !== undefined) this.loadTerrain(options.tilesetUrl);
     this.bindInput();
     this.resize();
@@ -112,7 +115,15 @@ export class Engine {
     this.terrain?.dispose();
     this.sites.dispose();
     this.models.dispose();
+    this.promos.dispose();
     this.renderer.dispose();
+  }
+
+  /**
+   * Language of the text drawn on promotion badges.
+   */
+  setLocale(locale: Locale): void {
+    this.locale = locale;
   }
 
   /**
@@ -232,7 +243,8 @@ export class Engine {
     this.camera.updateMatrixWorld();
     const origin = new Vector3(this.pointer.x, this.pointer.y, -1).unproject(this.camera);
     const target = new Vector3(this.pointer.x, this.pointer.y, 1).unproject(this.camera);
-    const slug = this.sites.pick(origin, target.sub(origin).normalize());
+    const direction = target.sub(origin).normalize();
+    const slug = this.promos.pick(origin, direction) ?? this.sites.pick(origin, direction);
     this.sites.setSelected(slug);
     this.events.emit('placeSelected', { slug });
   }
@@ -291,6 +303,7 @@ export class Engine {
     this.sites.update(this.state.distance, this.terrain?.group ?? null, this.terrain?.version ?? 0);
     this.models.update(this.sites.siteList(), this.state.target, this.state.distance);
     this.sites.setHidden(this.models.shownSlugs());
+    this.promos.update(this.sites.siteList(), this.locale, performance.now() / 1000, this.state.distance);
     this.renderer.render(this.scene, this.camera);
     this.scheduleViewChange();
 

@@ -48,7 +48,8 @@ watch(
 
 watch(
   () => store.locale,
-  () => {
+  (locale) => {
+    engine?.setLocale(locale);
     if (store.selectedSlug) void store.selectPlace(store.selectedSlug);
   },
 );

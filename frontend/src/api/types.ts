@@ -13,8 +13,18 @@ export interface PromotionSummary {
   title: string;
   body: string | null;
   ends_at: string;
-  sprite_type: 'static' | 'spritesheet' | 'template';
+  sprite: PromotionSprite;
+}
+
+export interface PromotionSprite {
+  type: 'static' | 'spritesheet' | 'template';
+  url: string | null;
+  frames: number;
+  cols: number;
+  rows: number;
+  fps: number;
   template_key: string | null;
+  template_data: Record<string, unknown> | null;
 }
 
 export interface PlaceSummary {

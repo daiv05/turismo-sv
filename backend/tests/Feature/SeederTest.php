@@ -30,7 +30,7 @@ it('can be run twice without duplicating anything', function () {
     $this->seed(DatabaseSeeder::class);
     $this->seed(DatabaseSeeder::class);
 
-    expect(Place::count())->toBe(5)->and(Zone::count())->toBe(3)->and(Category::count())->toBeGreaterThanOrEqual(5);
+    expect(Place::count())->toBe(5)->and(App\Domain\Promotions\Promotion::count())->toBe(2)->and(Zone::count())->toBe(3)->and(Category::count())->toBeGreaterThanOrEqual(5);
 });
 
 it('serves the seeded monuments through the public API', function () {

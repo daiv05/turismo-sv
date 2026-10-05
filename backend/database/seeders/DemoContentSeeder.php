@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Domain\Categories\Category;
 use App\Domain\Places\Place;
 use App\Domain\Places\PlaceStatus;
+use App\Domain\Promotions\Promotion;
 use App\Domain\Zones\Zone;
 use App\Domain\Zones\ZoneType;
 use App\Support\Spatial;
@@ -28,6 +29,11 @@ class DemoContentSeeder extends Seeder
             ['plaza-libertad', 'Plaza Libertad', 'Liberty Square', 'Plaza con el monumento a la Libertad en la avenida Cuscatlán.', 'Square with the Liberty monument on Cuscatlán avenue.', -89.18988, 13.69916, 60],
         ];
 
+        $promotions = [
+            'catedral-metropolitana' => [['es' => 'Visita guiada 2x1', 'en' => 'Guided tour 2x1'], 'two-for-one', null],
+            'teatro-nacional' => [['es' => 'Función con descuento', 'en' => 'Discounted show'], 'percent-off', ['value' => 20]],
+        ];
+
         foreach ($places as [$slug, $es, $en, $summaryEs, $summaryEn, $lon, $lat, $priority]) {
             Place::updateOrCreate(['slug' => $slug], [
                 'category_id' => $monuments->id,
@@ -37,6 +43,18 @@ class DemoContentSeeder extends Seeder
                 'location' => Spatial::point($lon, $lat),
                 'status' => PlaceStatus::Published,
                 'priority' => $priority,
+            ]);
+        }
+
+        foreach ($promotions as $slug => [$title, $template, $data]) {
+            $place = Place::where('slug', $slug)->firstOrFail();
+            Promotion::updateOrCreate(['place_id' => $place->id, 'template_key' => $template], [
+                'title' => $title,
+                'starts_at' => now()->startOfDay(),
+                'ends_at' => now()->addYear(),
+                'status' => PlaceStatus::Published,
+                'sprite_type' => 'template',
+                'template_data' => $data,
             ]);
         }
     }

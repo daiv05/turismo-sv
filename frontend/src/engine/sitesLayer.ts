@@ -63,7 +63,7 @@ export class SitesLayer {
   private readonly bubbles = new Group();
   private selected: string | null = null;
   private hidden: ReadonlySet<string> = new Set();
-  private siteListCache: Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null }> | null = null;
+  private siteListCache: Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null; promotions: PlaceSummary['promotions'] }> | null = null;
   private heightsVersion = -1;
   private scaleApplied = -1;
   private readonly ray = new Raycaster();
@@ -100,8 +100,8 @@ export class SitesLayer {
   /**
    * Sites with their scene position, terrain height and model URL, for the models layer.
    */
-  siteList(): Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null }> {
-    this.siteListCache ??= this.plotted.map((p) => ({ slug: p.slug, x: p.x, y: p.y, z: p.z, hasModel: p.place.model !== null, url: p.place.model?.glb_url ?? null }));
+  siteList(): Array<{ slug: string; x: number; y: number; z: number; hasModel: boolean; url: string | null; promotions: PlaceSummary['promotions'] }> {
+    this.siteListCache ??= this.plotted.map((p) => ({ slug: p.slug, x: p.x, y: p.y, z: p.z, hasModel: p.place.model !== null, url: p.place.model?.glb_url ?? null, promotions: p.place.promotions }));
     return this.siteListCache;
   }
 
